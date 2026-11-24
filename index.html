@@ -41,9 +41,9 @@ button.primary:active{background:#000}
 #metro.shut{transform:translateX(-100%);box-shadow:none}
 #mHandle{position:absolute;right:-30px;bottom:-1px;width:30px;height:64px;background:var(--sheet);border:1px solid var(--line);border-left:0;border-radius:0 6px 6px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;cursor:pointer;box-shadow:3px 2px 8px rgba(60,50,30,.08)}
 #mHandle .grip{width:3px;height:16px;border-left:1px solid var(--muted);border-right:1px solid var(--muted)}
-#mHandle i{width:12px;height:12px;border-radius:50%;background:var(--soft);transition:background .12s ease-out,transform .12s ease-out}
-#mHandle i.hit{background:var(--ink);transform:scale(1.15);transition:none}
-#mHandle i.hit.acc{background:var(--accent)}
+#mHandle i{position:relative;width:12px;height:12px;border-radius:50%;background:var(--soft)}
+#mHandle i em{position:absolute;inset:-1px;border-radius:50%;opacity:0;background:var(--ink);will-change:opacity,transform}
+#mHandle i em.a{background:var(--accent)}
 #metro.show{display:flex}
 #metro .mrow{display:flex;align-items:center;gap:6px}
 #metro button{padding:5px 9px;min-width:34px}
@@ -227,7 +227,7 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
   </header>
   <main id="stage">
     <div id="metro">
-      <div id="mHandle" title="메트로놈 서랍 열기/닫기"><span class="grip"></span><i></i></div>
+      <div id="mHandle" title="메트로놈 서랍 열기/닫기"><span class="grip"></span><i><em></em><em class="a"></em></i></div>
       <div class="mrow">
         <button id="mPlay" title="시작/정지">시작</button>
         <button id="mMinus">−</button><input id="mBpm" type="number" min="30" max="240" inputmode="numeric"><button id="mPlus">+</button>
@@ -777,31 +777,37 @@ let rz; addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(()=>{ ca
 document.addEventListener("visibilitychange",async()=>{ if(document.visibilityState==="visible" && camOn){ try{ wakeLock=await navigator.wakeLock?.request("screen"); }catch(e){} } });
 
 /* ---------- 메트로놈 (소리 없이 불빛으로 박자 표시) ---------- */
-const M=S.metro; let mOn=false, t0=0, lastBeat=-1, raf=0, taps=[];
+const M=S.metro; let mOn=false, t0=0, nextIdx=0, mTimer=0, anims=[], taps=[];
 const clampB=v=>Math.max(30,Math.min(240,Math.round(+v||80)));
 function mDraw(){
   $("#mBpm").value=M.bpm; $("#mRange").value=M.bpm; $("#mBeats").value=M.beats;
   $("#mDots").innerHTML="<i></i>".repeat(M.beats);
   $("#metro").classList.toggle("shut",!!M.shut);
 }
-function setBpm(v){ M.bpm=clampB(v); save(); $("#mBpm").value=M.bpm; $("#mRange").value=M.bpm; if(mOn){ t0=performance.now()-0; lastBeat=-1; } }
-function light(b){
-  const acc=M.beats>1&&b===0;
-  [...$("#mDots").children].forEach((d,i)=>{ d.classList.toggle("hit",i===b); d.classList.toggle("acc",i===0&&M.beats>1); });
-  const L=$("#mHandle i"); if(b<0){ L.className=""; return; }
-  L.className="hit"+(acc?" acc":""); setTimeout(()=>{ if(L.className.startsWith("hit")) L.className=""; },Math.min(140,30000/M.bpm));
-}
-function mLoop(now){
-  if(!mOn) return; raf=requestAnimationFrame(mLoop);
-  const n=Math.floor((now-t0)/(60000/M.bpm));
-  if(n!==lastBeat){ lastBeat=n; light(((n%M.beats)+M.beats)%M.beats); }
+/* 깜빡임은 화면 그리기 엔진에 "몇 ms 뒤에 켜라"고 미리 예약합니다.
+   저가 태블릿에서 화면 처리가 잠깐 멈춰도 제 박자에 깜빡이고, 늦은 깜빡임은 건너뜁니다. */
+function resync(){ anims.forEach(a=>a.cancel()); anims=[]; t0=performance.now()+60; nextIdx=0; }
+function setBpm(v){ M.bpm=clampB(v); save(); $("#mBpm").value=M.bpm; $("#mRange").value=M.bpm; if(mOn) resync(); }
+function dots(b){ [...$("#mDots").children].forEach((d,i)=>{ d.classList.toggle("hit",i===b); d.classList.toggle("acc",i===0&&M.beats>1); }); }
+function mSchedule(){
+  if(!mOn) return;
+  const per=60000/M.bpm, now=performance.now(), [en,ea]=$("#mHandle i").children;
+  anims=anims.filter(a=>a.playState!=="finished");
+  while(t0+nextIdx*per < now+800){
+    const at=t0+nextIdx*per, delay=at-performance.now(), b=nextIdx%M.beats; nextIdx++;
+    if(delay<-40) continue; // 이미 늦은 박은 표시하지 않음(두 번 깜빡임 방지)
+    const el=(M.beats>1&&b===0)?ea:en;
+    anims.push(el.animate([{opacity:1,transform:"scale(1.2)"},{opacity:1,transform:"scale(1.1)",offset:.35},{opacity:0,transform:"scale(1)"}],
+      {duration:Math.min(260,per*.6),delay:Math.max(0,delay),easing:"ease-out"}));
+    if(!M.shut) setTimeout(()=>{ if(mOn) dots(b); },Math.max(0,delay));
+  }
 }
 function mStart(){
-  mOn=true; t0=performance.now(); lastBeat=-1; raf=requestAnimationFrame(mLoop);
+  mOn=true; resync(); mSchedule(); mTimer=setInterval(mSchedule,150);
   $("#mPlay").textContent="정지"; $("#mPlay").classList.add("on");
   setShut(true); // 시작하면 서랍을 닫고 손잡이 불빛으로 박자 표시
 }
-function mStop(){ mOn=false; cancelAnimationFrame(raf); light(-1); $("#mPlay").textContent="시작"; $("#mPlay").classList.remove("on"); }
+function mStop(){ mOn=false; clearInterval(mTimer); anims.forEach(a=>a.cancel()); anims=[]; dots(-1); $("#mPlay").textContent="시작"; $("#mPlay").classList.remove("on"); }
 function setShut(v){ M.shut=v; save(); $("#metro").classList.toggle("shut",v); }
 $("#mHandle").onclick=()=>setShut(!M.shut); // 손잡이: 서랍 열기/닫기
 $("#mPlay").onclick=()=>mOn?mStop():mStart();
@@ -809,7 +815,7 @@ $("#mMinus").onclick=()=>setBpm(M.bpm-1);
 $("#mPlus").onclick=()=>setBpm(M.bpm+1);
 $("#mBpm").onchange=e=>setBpm(e.target.value);
 $("#mRange").oninput=e=>setBpm(e.target.value);
-$("#mBeats").onchange=e=>{ M.beats=+e.target.value; save(); mDraw(); if(mOn){ t0=performance.now(); lastBeat=-1; } };
+$("#mBeats").onchange=e=>{ M.beats=+e.target.value; save(); mDraw(); if(mOn) resync(); };
 $("#mTap").onclick=()=>{ const n=performance.now(); taps=taps.filter(t=>n-t<2500); taps.push(n);
   if(taps.length>=2){ const gaps=taps.slice(1).map((t,i)=>t-taps[i]); setBpm(60000/(gaps.reduce((a,b)=>a+b)/gaps.length)); }
   else toast("박자에 맞춰 몇 번 더 눌러 주세요",1200); };
