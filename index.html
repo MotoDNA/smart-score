@@ -594,7 +594,16 @@ function playItems(){
   $("#title").textContent=items.length===1?items[0].name:`${items[0].name} 외 ${items.length-1}개`;
   startUse();
 }
-function openSample(){ cache.clear(); pages=[]; sample=true; total=6; cur=1; $("#title").textContent="샘플 악보 (6쪽)"; startUse(); }
+async function openSample(){
+  // 샘플: Suno AI로 만든 곡 「나도 가수가 되고 싶어요」 자동 채보 악보
+  cache.clear(); cur=1;
+  try{
+    const imgs=await Promise.all([1,2].map(i=>new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=`img/sample/p${i}.webp`; })));
+    pages=imgs.map((img,i)=>({img,key:"suno-sample#"+(i+1)})); sample=false; total=pages.length;
+    $("#title").textContent="나도 가수가 되고 싶어요 (샘플)";
+  }catch(e){ pages=[]; sample=true; total=6; $("#title").textContent="샘플 악보 (6쪽)"; }
+  startUse();
+}
 function startUse(){ $("#metro").classList.add("show"); $("#welcome").classList.remove("on"); $("#empty").style.display="none"; show(); if(!camOn) startCam(); }
 
 function fitCanvas(w,h,W,H){
