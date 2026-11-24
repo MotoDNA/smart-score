@@ -184,7 +184,7 @@ input[type=range]{accent-color:var(--ink)}
 .stepNo b{color:var(--accent);font-weight:400}
 .step h1{margin:0;font-family:"Gowun Batang",serif;font-weight:700;font-size:clamp(26px,5vw,36px);line-height:1.25}
 .step p{color:var(--muted);line-height:1.6;margin:8px 0 0}
-#carousel{display:flex;gap:0;overflow-x:auto;scroll-snap-type:x mandatory;padding:34px calc(50% - 85px) 26px;margin:6px -24px 0;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+#carousel{position:relative;display:flex;gap:0;overflow-x:auto;scroll-snap-type:x mandatory;padding:34px calc(50% - 85px) 26px;margin:6px -24px 0;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
 #carousel::-webkit-scrollbar{display:none}
 .ic{flex:none;width:170px;scroll-snap-align:center;border:0;background:transparent;padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;will-change:transform}
 .ic:hover{border:0}.ic:active{background:transparent}
@@ -876,10 +876,11 @@ function onCarScroll(){
   const mid=car.scrollLeft+car.clientWidth/2; let best=null, bd=1e9;
   car.querySelectorAll(".ic").forEach(b=>{
     const c=b.offsetLeft+b.offsetWidth/2, d=(c-mid)/b.offsetWidth, a=Math.min(1.6,Math.abs(d));
-    b.style.transform=`translateY(${a*a*14}px) scale(${1-a*.16}) rotate(${d*-5}deg)`; b.style.opacity=1-a*.35;
+    b.style.transform=`translateY(${a*a*14}px) scale(${1-a*.16}) rotate(${d*-5}deg)`; b.style.opacity=Math.max(.45,1-a*.4); b.style.filter=a>.5?`saturate(${1-Math.min(.6,(a-.5)*.8)})`:"none";
     if(Math.abs(d)<bd){ bd=Math.abs(d); best=b; }
   });
   car.querySelectorAll(".ic").forEach(b=>b.classList.toggle("cur",b===best));
+  if(best){ best.style.opacity=1; best.style.filter="none"; } // 가운데 악기는 항상 진하게
   const k=best?.dataset.k;
   if(k && k!==S.inst){ S.inst=k; save(); refreshAll(); }
   [...$("#instDots").children].forEach((d,i)=>d.classList.toggle("on",KEYS[i]===k));
