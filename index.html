@@ -939,7 +939,7 @@ function wrapPage(n,c){
     e.preventDefault(); e.stopPropagation(); o.setPointerCapture(e.pointerId);
     const k=pageKey(n), r=o.getBoundingClientRect(); remember(k); INK[k]=INK[k]||[];
     if(tool.t==="er"){ cur={er:true,r}; erased=false; eraseAt(k,pt(e,r)); return; }
-    if(tool.t==="st"){ const [x,y]=pt(e,r); INK[k].push({t:"tx",st:1,txt:tool.s,x,y,z:/^\d$/.test(tool.s)?.026:.03,c:tool.c==="#1d1b18"?"#1d1b18":tool.c}); drawInk(o,n); saveInk(); return; }
+    if(tool.t==="st"){ const [x,y]=pt(e,r); INK[k].push({t:"tx",st:1,txt:tool.s,x,y,z:/^\d$/.test(tool.s)?.032:.038,c:tool.c==="#1d1b18"?"#1d1b18":tool.c}); drawInk(o,n); saveInk(); return; }
     if(tool.t==="tx"){ undoStack.pop(); const [x,y]=pt(e,r); askText(e.clientX,e.clientY,txt=>{ if(!txt) return; remember(k); INK[k].push({t:"tx",txt,x,y,z:.022,c:tool.c}); drawInk(o,n); saveInk(); }); return; }
     cur={r,s:{t:tool.t,c:tool.t==="hl"?"#f2c230":tool.c,w:tool.t==="hl"?.022:.0032,p:[pt(e,r)]}};
     INK[k].push(cur.s); drawInk(o,n);
