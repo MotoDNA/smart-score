@@ -44,7 +44,17 @@ body.editing #inkbar{transform:translate(-50%,0)}
 #inkbar .sw i{width:16px;height:16px;border-radius:50%}
 #inkbar .sw.on{background:transparent;border:2px solid var(--ink);color:inherit}
 #inkbar .sep{width:1px;height:24px;background:var(--line);margin:0 2px}
-body.editing #cam{bottom:110px}
+body.editing #cam,body.editing #metro{display:none!important}
+body.editing #bar>*:not(#title):not(#pageInfo):not(#btnInk){display:none}
+body.editing #bar{background:var(--ink);color:var(--sheet);border-bottom-color:var(--ink)}
+body.editing #bar #title,body.editing #bar #pageInfo{color:var(--sheet)}
+body.editing #btnInk{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff}
+#stampbar{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:76px;z-index:26;background:var(--sheet);border:1px solid var(--line);border-radius:12px;padding:6px;gap:4px;flex-wrap:wrap;justify-content:center;max-width:calc(100% - 20px);box-shadow:0 8px 24px rgba(60,50,30,.15)}
+#stampbar.on{display:flex}
+#stampbar button{min-width:38px;padding:6px 8px;font-family:"Gowun Batang",serif;font-size:16px}
+#stampbar button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+#stampbar button i{font-style:italic;font-weight:700}
+.txtIn{position:fixed;z-index:30;font:16px "Noto Sans KR",sans-serif;padding:4px 6px;border:1.5px solid var(--accent);border-radius:4px;background:#fff;min-width:140px;outline:none}
 .flash{position:absolute;top:0;bottom:0;width:5px;background:var(--accent);opacity:0;pointer-events:none;transition:opacity .25s;font-size:0}
 #flashL{left:0}#flashR{right:0}
 .flash.on{opacity:1}
@@ -188,6 +198,22 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
 .tfoot button{padding:3px 10px}
 .tfoot b{font-family:"Gowun Batang",serif;color:var(--ink);font-size:16px;min-width:54px}
 .tmsg{font-size:13px;color:var(--muted);margin-top:10px;min-height:18px}
+/* home */
+#stepHome{align-items:center;justify-content:center;text-align:center;min-height:100%}
+#stepHome .eyebrow{margin-bottom:10px}
+#stepHome h1{font-size:clamp(40px,9vw,64px);letter-spacing:-.02em}
+#stepHome .line{width:1px;height:56px;background:var(--line);margin:26px auto}
+#goStart{width:112px;height:112px;border-radius:50%;background:var(--ink);color:var(--sheet);border:0;font-size:17px;letter-spacing:.06em;box-shadow:0 10px 30px rgba(30,25,20,.25);transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
+#goStart:hover{transform:scale(1.05)}
+#goStart:active{transform:scale(.94)}
+#goStart.burst{animation:burst .5s cubic-bezier(.5,0,.7,.4) forwards}
+@keyframes burst{to{transform:scale(9);opacity:0}}
+#stepHome .home-fine{position:fixed;bottom:22px;left:0;right:0;color:var(--muted);font-size:12px}
+.step.burstIn .ic .art img{animation:flyOut .75s cubic-bezier(.2,1.3,.4,1) both;animation-delay:var(--dl)}
+.step.burstIn .ic b,.step.burstIn .ic small{animation:fadeUp .5s ease-out both;animation-delay:calc(var(--dl) + .35s)}
+@keyframes flyOut{from{transform:translate(var(--fx),var(--fy)) scale(.15) rotate(-40deg);opacity:0}60%{opacity:1}to{transform:scale(var(--fs,1)) rotate(0);opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.step.burstIn h1,.step.burstIn .stepNo,.step.burstIn .dots,.step.burstIn .stepFoot{animation:fadeUp .5s ease-out .5s both}
 /* overlays */
 .overlay{position:fixed;inset:0;background:var(--paper);z-index:40;display:none;align-items:center;justify-content:center;padding:24px}
 .overlay.on{display:flex}
@@ -291,7 +317,14 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
 </div>
 
 <div class="overlay on" id="welcome">
-  <section class="step on" id="stepInst">
+  <section class="step on" id="stepHome">
+    <div class="eyebrow">Hands-free Score</div>
+    <h1>악보</h1>
+    <div class="line"></div>
+    <button id="goStart">시작</button>
+    <div class="home-fine">고개를 돌리면, 다음 장.</div>
+  </section>
+  <section class="step" id="stepInst">
     <div class="stepNo"><b>1</b> / 2 &nbsp;악기</div>
     <h1>무엇을 연주하세요?</h1>
     <div id="carousel"></div>
@@ -318,6 +351,8 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
   <button class="sw" data-t="pen" data-c="#c0392b" title="빨강 펜"><i style="background:#c0392b"></i></button>
   <button class="sw" data-t="pen" data-c="#1f5fbf" title="파랑 펜"><i style="background:#1f5fbf"></i></button>
   <button data-t="hl">형광펜</button>
+  <button data-t="tx">글자</button>
+  <button data-t="st">기호</button>
   <button data-t="er">지우개</button>
   <span class="sep"></span>
   <button id="inkUndo">되돌리기</button>
@@ -325,6 +360,12 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
   <span class="sep"></span>
   <button id="inkPrev">이전</button><button id="inkNext">다음</button>
   <button id="inkDone" class="primary">완료</button>
+</div>
+
+<div id="stampbar">
+  <button data-s="1">1</button><button data-s="2">2</button><button data-s="3">3</button><button data-s="4">4</button><button data-s="5">5</button>
+  <button data-s="pp"><i>pp</i></button><button data-s="p"><i>p</i></button><button data-s="mp"><i>mp</i></button><button data-s="mf"><i>mf</i></button><button data-s="f"><i>f</i></button><button data-s="ff"><i>ff</i></button>
+  <button data-s="’">숨 ’</button><button data-s="rit.">rit.</button><button data-s="a tempo">a tempo</button><button data-s="cresc.">cresc.</button><button data-s="dim.">dim.</button>
 </div>
 
 <div id="tuner">
@@ -742,6 +783,20 @@ $("#resetInst").onclick=()=>{ delete S.cfg[S.inst]; save(); refreshAll(); toast(
 function goStep(id){ document.querySelectorAll(".step").forEach(x=>x.classList.toggle("on",x.id===id)); $("#welcome").classList.add("on"); if(id==="stepInst") requestAnimationFrame(()=>{ centerTo(S.inst,false); onCarScroll(); }); }
 $("#btnOpen").onclick=()=>goStep("stepLoad");
 $("#toLoad").onclick=()=>goStep("stepLoad");
+$("#goStart").onclick=()=>{
+  $("#goStart").classList.add("burst");
+  setTimeout(()=>{
+    goStep("stepInst");
+    requestAnimationFrame(()=>{ // 악기들이 가운데에서 뻗어 나오기
+      const cx=innerWidth/2, cy=innerHeight/2;
+      car.querySelectorAll(".ic").forEach((b,i)=>{ const r=b.querySelector(".art").getBoundingClientRect();
+        b.style.setProperty("--fx",(cx-(r.left+r.width/2))+"px"); b.style.setProperty("--fy",(cy-(r.top+r.height/2))+"px");
+        b.style.setProperty("--dl",(i*0.06)+"s"); b.style.setProperty("--fs",b.classList.contains("cur")?1.12:1); });
+      $("#stepInst").classList.add("burstIn"); setTimeout(()=>$("#stepInst").classList.remove("burstIn"),1400);
+      $("#goStart").classList.remove("burst");
+    });
+  },380);
+};
 $("#backInst").onclick=()=>goStep("stepInst");
 $("#goPlay").onclick=playItems;
 $("#mvL").onclick=()=>moveSel(-1); $("#mvR").onclick=()=>moveSel(1);
@@ -858,6 +913,9 @@ function saveInk(){ try{ localStorage.setItem("smartScore.ink",JSON.stringify(IN
 let editing=false, tool={t:"pen",c:"#1d1b18"}, undoStack=[], penSeen=false;
 const pageKey=n=>sample?"sample#"+n:pages[n-1]?.key;
 function drawStroke(x,s,W,H){
+  if(s.t==="tx"){ x.save(); const dyn=/^(pp|p|mp|mf|f|ff)$/.test(s.txt);
+    x.font=`${dyn?"italic 700 ":(s.st?"":"500 ")}${Math.round(s.z*W)}px ${s.st?'"Gowun Batang",serif':'"Noto Sans KR",sans-serif'}`;
+    x.fillStyle=s.c; x.textBaseline="middle"; x.textAlign=s.st?"center":"left"; x.fillText(s.txt,s.x*W,s.y*H); x.restore(); return; }
   x.save(); x.lineCap="round"; x.lineJoin="round";
   if(s.t==="hl") x.globalAlpha=.38;
   x.strokeStyle=s.c; x.lineWidth=Math.max(1,s.w*W); x.beginPath();
@@ -881,6 +939,8 @@ function wrapPage(n,c){
     e.preventDefault(); e.stopPropagation(); o.setPointerCapture(e.pointerId);
     const k=pageKey(n), r=o.getBoundingClientRect(); remember(k); INK[k]=INK[k]||[];
     if(tool.t==="er"){ cur={er:true,r}; erased=false; eraseAt(k,pt(e,r)); return; }
+    if(tool.t==="st"){ const [x,y]=pt(e,r); INK[k].push({t:"tx",st:1,txt:tool.s,x,y,z:/^\d$/.test(tool.s)?.026:.03,c:tool.c==="#1d1b18"?"#1d1b18":tool.c}); drawInk(o,n); saveInk(); return; }
+    if(tool.t==="tx"){ undoStack.pop(); const [x,y]=pt(e,r); askText(e.clientX,e.clientY,txt=>{ if(!txt) return; remember(k); INK[k].push({t:"tx",txt,x,y,z:.022,c:tool.c}); drawInk(o,n); saveInk(); }); return; }
     cur={r,s:{t:tool.t,c:tool.t==="hl"?"#f2c230":tool.c,w:tool.t==="hl"?.022:.0032,p:[pt(e,r)]}};
     INK[k].push(cur.s); drawInk(o,n);
   });
@@ -896,21 +956,36 @@ function wrapPage(n,c){
   const end=()=>{ if(!cur) return; if(cur.er && !erased) undoStack.pop(); cur=null; saveInk(); };
   o.addEventListener("pointerup",end); o.addEventListener("pointercancel",end);
   function eraseAt(k,[ex,ey]){
-    const before=INK[k].length; INK[k]=INK[k].filter(s=>!s.p.some(([a,b])=>Math.hypot(a-ex,(b-ey)*1.3)<.018));
+    const before=INK[k].length; INK[k]=INK[k].filter(s=>s.t==="tx"?Math.hypot(s.x-ex,(s.y-ey)*1.3)>.03:!s.p.some(([a,b])=>Math.hypot(a-ex,(b-ey)*1.3)<.018));
     if(INK[k].length!==before){ erased=true; drawInk(o,n); }
   }
   return w;
 }
+function askText(cx,cy,done){
+  const inp=document.createElement("input"); inp.className="txtIn"; inp.placeholder="메모 입력 후 Enter";
+  inp.style.left=Math.min(cx,innerWidth-170)+"px"; inp.style.top=(cy-18)+"px"; document.body.append(inp); setTimeout(()=>inp.focus(),30);
+  let fin=false; const commit=()=>{ if(fin) return; fin=true; const v=inp.value.trim(); inp.remove(); done(v); };
+  inp.addEventListener("keydown",e=>{ e.stopPropagation(); if(e.key==="Enter") commit(); if(e.key==="Escape"){ inp.value=""; commit(); } });
+  inp.addEventListener("blur",commit);
+}
 function setTool(btn){
   document.querySelectorAll("#inkbar [data-t]").forEach(b=>b.classList.toggle("on",b===btn));
-  tool={t:btn.dataset.t,c:btn.dataset.c||tool.c};
+  tool={t:btn.dataset.t,c:btn.dataset.c||(typeof lastColor!=="undefined"?lastColor:tool.c),s:tool.s||"1"};
+  $("#stampbar").classList.toggle("on",tool.t==="st");
+  $("#stampbar").style.bottom=(innerHeight-$("#inkbar").getBoundingClientRect().top+8)+"px"; // 도구 막대 바로 위
+  if(tool.t==="st") document.querySelectorAll("#stampbar button").forEach(b=>b.classList.toggle("on",b.dataset.s===tool.s));
 }
+document.querySelectorAll("#stampbar button").forEach(b=>b.onclick=()=>{ tool.s=b.dataset.s; document.querySelectorAll("#stampbar button").forEach(x=>x.classList.toggle("on",x===b)); });
+["pointerdown","pointerup"].forEach(ev=>$("#stampbar").addEventListener(ev,e=>e.stopPropagation()));
 function setEditing(v){
   editing=v; document.body.classList.toggle("editing",v);
-  $("#btnInk").classList.toggle("primary",v);
-  if(v){ $("#metro").classList.add("shut"); toast("필기 중에는 페이지가 동작으로 넘어가지 않아요",1800); }
+  $("#btnInk").textContent=v?"필기 끝내기":"필기";
+  if(!v){ $("#stampbar").classList.remove("on"); }
+  else toast("필기 모드 — 화면을 만져도, 고개를 돌려도 넘어가지 않아요",2000);
+  setTimeout(()=>{ cache.clear(); show(); },60);
 }
 document.querySelectorAll("#inkbar [data-t]").forEach(b=>b.onclick=()=>setTool(b));
+let lastColor="#1d1b18"; document.querySelectorAll("#inkbar .sw").forEach(b=>b.addEventListener("click",()=>lastColor=b.dataset.c));
 $("#btnInk").onclick=()=>{ if(!total){ toast("먼저 악보를 열어 주세요"); return; } setEditing(!editing); };
 $("#inkDone").onclick=()=>setEditing(false);
 $("#inkPrev").onclick=()=>go(-1); $("#inkNext").onclick=()=>go(+1);
