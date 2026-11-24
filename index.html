@@ -251,10 +251,21 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
 #stepHome .eyebrow{margin-bottom:10px}
 #stepHome h1{font-size:clamp(40px,9vw,64px);letter-spacing:-.02em}
 #stepHome .line{width:1px;height:56px;background:var(--line);margin:26px auto}
-#goStart{width:112px;height:112px;border-radius:50%;background:var(--ink);color:var(--sheet);border:0;font-size:17px;letter-spacing:.06em;box-shadow:0 10px 30px rgba(30,25,20,.25);transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
-#goStart:hover{transform:scale(1.05)}
-#goStart:active{transform:scale(.94)}
-#goStart.burst{animation:burst .5s cubic-bezier(.5,0,.7,.4) forwards}
+.homeBtns{display:flex;gap:clamp(28px,7vw,56px);justify-content:center;align-items:flex-start}
+.hb{display:flex;flex-direction:column;align-items:center;gap:12px;border:0;background:none;padding:0;color:var(--ink)}
+.hb:hover,.hb:active{border:0;background:none}
+.hb .disc{width:112px;height:112px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .25s cubic-bezier(.3,1.6,.5,1),box-shadow .25s}
+.hb .disc svg{width:38px;height:38px;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.hb.play .disc{background:var(--ink);box-shadow:0 10px 30px rgba(30,25,20,.25)}
+.hb.play .disc svg{stroke:var(--sheet);fill:var(--sheet)}
+.hb.edit .disc{background:var(--sheet);border:1.5px solid var(--ink)}
+.hb.edit .disc svg{stroke:var(--ink)}
+.hb:hover .disc{transform:scale(1.06)}
+.hb:active .disc{transform:scale(.93)}
+.hb b{font-weight:500;font-size:16px;letter-spacing:.04em}
+.hb small{font-family:"Gowun Batang",serif;font-style:italic;color:var(--muted);font-size:12px;margin-top:-8px}
+.hb.burst .disc{animation:burst .5s cubic-bezier(.5,0,.7,.4) forwards}
+.homeBtns.leaving .hb:not(.burst){opacity:0;transition:opacity .25s}
 @keyframes burst{to{transform:scale(9);opacity:0}}
 #stepHome .home-fine{position:fixed;bottom:22px;left:0;right:0;color:var(--muted);font-size:12px}
 .step.burstIn .ic .art img{animation:flyOut .75s cubic-bezier(.2,1.3,.4,1) both;animation-delay:var(--dl)}
@@ -378,7 +389,10 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
     <div class="eyebrow">Hands-free Score</div>
     <h1>악보</h1>
     <div class="line"></div>
-    <button id="goStart">시작</button>
+    <div class="homeBtns">
+      <button class="hb play" id="goPlayMode"><span class="disc"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg></span><b>악보 재생</b><small>Play</small></button>
+      <button class="hb edit" id="goEditMode"><span class="disc"><svg viewBox="0 0 24 24"><path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19z"/><path d="M14.5 6.5l3 3"/></svg></span><b>악보 편집</b><small>Edit</small></button>
+    </div>
     <div class="home-fine">고개를 돌리면, 다음 장.</div>
   </section>
   <section class="step" id="stepInst">
@@ -389,7 +403,7 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
     <div class="stepFoot"><button class="primary" id="toLoad">선택 완료</button></div>
   </section>
   <section class="step" id="stepLoad">
-    <div class="stepNo"><b>2</b> / 2 &nbsp;악보</div>
+    <div class="stepNo" id="loadNo"><b>2</b> / 2 &nbsp;악보</div>
     <h1>악보를 불러올게요</h1>
     <p>PDF나 악보 사진을 골라 주세요. 여러 개를 한 번에 골라도 되고, 섞어도 됩니다.</p>
     <label class="drop" id="drop" for="file">
@@ -584,7 +598,8 @@ function drawList(){
   });
   $("#fbar").classList.toggle("on",selItem>=0);
   if(selItem>=0) $("#fbarTxt").textContent=items[selItem].name;
-  $("#goPlay").textContent=items.length?`연주 시작 (${items.reduce((a,b)=>a+b.pages,0)}쪽)`:"연주 시작";
+  const verb=typeof startMode!=="undefined"&&startMode==="edit"?"편집 시작":"연주 시작";
+  $("#goPlay").textContent=items.length?`${verb} (${items.reduce((a,b)=>a+b.pages,0)}쪽)`:verb;
 }
 function moveSel(d){ const j=selItem+d; if(selItem<0||j<0||j>=items.length) return; [items[selItem],items[j]]=[items[j],items[selItem]]; selItem=j; drawList(); }
 function playItems(){
@@ -604,7 +619,11 @@ async function openSample(){
   }catch(e){ pages=[]; sample=true; total=6; $("#title").textContent="샘플 악보 (6쪽)"; }
   startUse();
 }
-function startUse(){ $("#metro").classList.add("show"); $("#welcome").classList.remove("on"); $("#empty").style.display="none"; show(); if(!camOn) startCam(); }
+function startUse(){
+  $("#welcome").classList.remove("on"); $("#empty").style.display="none";
+  if(startMode==="edit"){ show(); setEditing(true); return; } // 편집으로 시작: 카메라 없이 바로 편집 화면
+  $("#metro").classList.add("show"); show(); if(!camOn) startCam();
+}
 
 function fitCanvas(w,h,W,H){
   const s=Math.min(W/w,H/h), dpr=Math.min(devicePixelRatio||1,2);
@@ -882,8 +901,20 @@ $("#resetInst").onclick=()=>{ delete S.cfg[S.inst]; save(); refreshAll(); toast(
 function goStep(id){ document.querySelectorAll(".step").forEach(x=>x.classList.toggle("on",x.id===id)); $("#welcome").classList.add("on"); if(id==="stepInst") requestAnimationFrame(()=>{ centerTo(S.inst,false); onCarScroll(); }); }
 $("#btnOpen").onclick=()=>goStep("stepLoad");
 $("#toLoad").onclick=()=>goStep("stepLoad");
-$("#goStart").onclick=()=>{
-  $("#goStart").classList.add("burst");
+let startMode="play";
+function setLoadMode(m){
+  startMode=m;
+  $("#loadNo").innerHTML=m==="edit"?"<b>편집</b> &nbsp;악보":"<b>2</b> / 2 &nbsp;악보";
+  $("#backInst").textContent=m==="edit"?"처음으로":"악기 다시 고르기";
+  drawList();
+}
+$("#goEditMode").onclick=()=>{
+  setLoadMode("edit"); $("#goEditMode").classList.add("burst"); $(".homeBtns").classList.add("leaving");
+  setTimeout(()=>{ goStep("stepLoad"); $("#goEditMode").classList.remove("burst"); $(".homeBtns").classList.remove("leaving"); },380);
+};
+$("#goPlayMode").onclick=()=>{
+  setLoadMode("play"); $(".homeBtns").classList.add("leaving");
+  $("#goPlayMode").classList.add("burst");
   setTimeout(()=>{
     goStep("stepInst");
     requestAnimationFrame(()=>{ // 악기들이 가운데에서 뻗어 나오기
@@ -892,11 +923,11 @@ $("#goStart").onclick=()=>{
         b.style.setProperty("--fx",(cx-(r.left+r.width/2))+"px"); b.style.setProperty("--fy",(cy-(r.top+r.height/2))+"px");
         b.style.setProperty("--dl",(i*0.06)+"s"); b.style.setProperty("--fs",b.classList.contains("cur")?1.12:1); });
       $("#stepInst").classList.add("burstIn"); setTimeout(()=>$("#stepInst").classList.remove("burstIn"),1400);
-      $("#goStart").classList.remove("burst");
+      $("#goPlayMode").classList.remove("burst"); $(".homeBtns").classList.remove("leaving");
     });
   },380);
 };
-$("#backInst").onclick=()=>goStep("stepInst");
+$("#backInst").onclick=()=>goStep(startMode==="edit"?"stepHome":"stepInst");
 $("#goPlay").onclick=playItems;
 $("#mvL").onclick=()=>moveSel(-1); $("#mvR").onclick=()=>moveSel(1);
 $("#rmSel").onclick=()=>{ if(selItem<0) return; items.splice(selItem,1); selItem=-1; drawList(); };
@@ -1147,6 +1178,7 @@ function setEditing(v){
   editing=v; document.body.classList.toggle("editing",v); closeChord();
   $("#btnInk").textContent=v?"완료":"편집";
   if(v){ setTool(tool.t||"pen"); updUndo(); }
+  else $("#metro").classList.add("show");
   setTimeout(()=>{ cache.clear(); show(); },60);
 }
 function undo(){ const u=undoStack.pop(); if(!u) return; redoStack.push({k:u.k,prev:JSON.stringify(INK[u.k]||[])}); INK[u.k]=JSON.parse(u.prev); saveInk(); redrawAll(); updUndo(); }
