@@ -280,10 +280,8 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
   <section class="step on" id="stepInst">
     <div class="stepNo"><b>1</b> / 2 &nbsp;악기</div>
     <h1>무엇을 연주하세요?</h1>
-    <p>옆으로 넘겨서 골라 주세요. 악기에 맞게 넘김 동작이 맞춰집니다.</p>
     <div id="carousel"></div>
     <div class="dots" id="instDots"></div>
-    <div class="note" id="pickNote"></div>
     <div class="stepFoot"><button class="primary" id="toLoad">이 악기로 할게요</button></div>
   </section>
   <section class="step" id="stepLoad">
@@ -681,7 +679,7 @@ function instGrid(el,onPick){
 }
 function refreshAll(){
   instGrid($("#drawerInst"),()=>{ refreshAll(); centerTo(S.inst,false); });
-  $("#pickNote").innerHTML=$("#instNote").innerHTML=PRESETS[S.inst].note;
+  $("#instNote").innerHTML=PRESETS[S.inst].note;
   $("#instBadge").textContent=PRESETS[S.inst].name;
   buildGestList(); buildGauges();
   const c=cfg();
