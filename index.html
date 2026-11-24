@@ -70,7 +70,7 @@ body.editing #inkprops{transform:translate(-50%,0);opacity:1;pointer-events:auto
 .ed{display:none!important}
 body.editing .ed{display:inline-flex!important}
 body.editing #cam,body.editing #metro{display:none!important}
-body.editing #bar>*:not(#title):not(#pageInfo):not(#btnInk):not(.ed){display:none}
+body.editing #bar>*:not(#title):not(#pageInfo):not(#btnInk):not(.ed):not(#btnShare){display:none}
 body.editing #bar{background:#1d1b18;color:var(--sheet);border-bottom-color:#1d1b18}
 body.editing #bar #title,body.editing #bar #pageInfo{color:var(--sheet)}
 body.editing #bar button{color:var(--sheet)}
@@ -273,6 +273,27 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
 @keyframes flyOut{from{transform:translate(var(--fx),var(--fy)) scale(.15) rotate(-40deg);opacity:0}60%{opacity:1}to{transform:scale(var(--fs,1)) rotate(0);opacity:1}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .step.burstIn h1,.step.burstIn .stepNo,.step.burstIn .dots,.step.burstIn .stepFoot{animation:fadeUp .5s ease-out .5s both}
+/* export */
+#exp{position:fixed;inset:0;z-index:46;display:none;align-items:center;justify-content:center;background:rgba(245,241,232,.75);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);padding:16px}
+#exp.on{display:flex}
+#exp .tcard{text-align:left}
+.eRow{margin-top:16px}
+.eRow .k{font-size:12px;color:var(--muted);margin-bottom:6px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;border-radius:0;padding:10px 6px;font-size:14px;background:var(--sheet)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--ink);color:#fff}
+.eChk{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:14px}
+.eProg{height:4px;border-radius:2px;background:var(--soft);margin-top:18px;overflow:hidden;display:none}
+.eProg i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.eMsg{font-size:13px;color:var(--muted);margin-top:8px;min-height:18px}
+.eBtns{display:flex;gap:8px;margin-top:14px}
+.eBtns button{flex:1;padding:12px;font-size:15px}
+.eReady{display:none;border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:14px;background:#fff}
+.eReady.on{display:block}
+.eFile{display:flex;align-items:center;gap:10px;font-size:14px}
+.eFile svg{width:28px;height:28px;flex:none}
+.eFile small{display:block;color:var(--muted);font-size:12px}
 /* overlays */
 .overlay{position:fixed;inset:0;background:var(--paper);z-index:40;display:none;align-items:center;justify-content:center;padding:24px}
 .overlay.on{display:flex}
@@ -324,6 +345,7 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
     <button class="ed" id="edNext">다음 ›</button>
     <button class="ed" id="edClear">이 쪽 비우기</button>
     <button id="btnInk">편집</button>
+    <button id="btnShare">내보내기</button>
     <button id="btnTune">튜너</button>
     <button id="btnSet">설정</button>
     <button id="btnFull"><span class="L">전체화면</span><span class="S">전체</span></button>
@@ -441,6 +463,23 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
   <div class="cpRow" id="cpBass"><div class="k">베이스 ( / )</div></div>
   <input id="cpFree" placeholder="직접 입력 (예: F#m7(b5), Bb/D)" autocomplete="off">
   <div class="cpFoot"><button id="cpDel">삭제</button><button id="cpCancel">취소</button><button class="primary" id="cpOk">넣기</button></div>
+</div>
+
+<div id="exp">
+  <div class="tcard">
+    <div class="thead"><span>내보내기</span><button id="eClose">닫기</button></div>
+    <div class="eRow"><div class="k">형식</div><div class="seg" id="eFmt"><button data-v="pdf" class="on">PDF</button><button data-v="jpg">이미지 (JPG)</button></div></div>
+    <div class="eRow"><div class="k">범위</div><div class="seg" id="eRange"><button data-v="all" class="on" id="eAll">전체</button><button data-v="cur" id="eCur">지금 보는 쪽</button></div></div>
+    <label class="eChk"><input type="checkbox" id="eInk" checked> 필기·코드·메모 포함</label>
+    <div class="eBtns"><button class="primary" id="eMake">파일 만들기</button></div>
+    <div class="eProg" id="eProg"><i></i></div>
+    <div class="eMsg" id="eMsg"></div>
+    <div class="eReady" id="eReady">
+      <div class="eFile"><svg viewBox="0 0 28 28" fill="none" stroke="#1d1b18" stroke-width="1.6"><path d="M7 3h10l5 5v17H7z" fill="#fff"/><path d="M17 3v5h5"/><rect x="9" y="15" width="11" height="6" rx="1" fill="#8e2a1d" stroke="none"/></svg><div><b id="eName"></b><small id="eSize"></small></div></div>
+      <div class="eBtns"><button class="primary" id="eShareBtn">공유하기</button><button id="eSave">기기에 저장</button></div>
+      <div class="eMsg" id="eHint"></div>
+    </div>
+  </div>
 </div>
 
 <div id="tuner">
@@ -1194,6 +1233,70 @@ addEventListener("keydown",e=>{ if(!editing||e.target.closest?.("input")) return
 },true);
 ["pointerdown","pointerup"].forEach(ev=>$("#inkbar").addEventListener(ev,e=>e.stopPropagation()));
 drawProps(); updUndo();
+
+/* ---------- 내보내기: PDF·이미지로 공유/저장 ---------- */
+const EX={fmt:"pdf",range:"all",files:null};
+function segInit(id,key){ document.querySelectorAll(id+" button").forEach(b=>b.onclick=()=>{ EX[key]=b.dataset.v; document.querySelectorAll(id+" button").forEach(x=>x.classList.toggle("on",x===b)); resetExp(); }); }
+segInit("#eFmt","fmt"); segInit("#eRange","range");
+$("#eInk").onchange=resetExp;
+function resetExp(){ EX.files=null; $("#eReady").classList.remove("on"); $("#eMsg").textContent=""; $("#eProg").style.display="none"; }
+function openExp(){ if(!total){ toast("먼저 악보를 열어 주세요"); return; }
+  $("#eAll").textContent=`전체 ${total}쪽`; $("#eCur").textContent=`지금 보는 쪽 (${cur})`; resetExp(); $("#exp").classList.add("on"); }
+$("#btnShare").onclick=openExp; $("#eClose").onclick=()=>$("#exp").classList.remove("on");
+$("#exp").addEventListener("pointerdown",e=>{ if(e.target.id==="exp") $("#exp").classList.remove("on"); });
+["pointerdown","pointerup"].forEach(ev=>$("#exp").addEventListener(ev,e=>e.stopPropagation()));
+async function pageImage(n,withInk){
+  const base=await renderPage(n,1240,1754), c=document.createElement("canvas"); c.width=base.width; c.height=base.height;
+  const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(base,0,0);
+  if(withInk){ x.save(); x.globalCompositeOperation="multiply"; (INK[pageKey(n)]||[]).forEach(s=>drawStroke(x,s,c.width,c.height)); x.restore(); }
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",.9));
+  return {blob,w:c.width,h:c.height};
+}
+async function buildPdf(imgs){
+  const enc=new TextEncoder(), parts=[], offs=[]; let len=0;
+  const push=v=>{ const b=typeof v==="string"?enc.encode(v):v; parts.push(b); len+=b.length; };
+  const obj=(num,fn)=>{ offs[num]=len; push(num+" 0 obj\n"); fn(); push("\nendobj\n"); };
+  push("%PDF-1.4\n"); const N=imgs.length;
+  obj(1,()=>push("<< /Type /Catalog /Pages 2 0 R >>"));
+  obj(2,()=>push(`<< /Type /Pages /Count ${N} /Kids [${imgs.map((_,i)=>(3+3*i)+" 0 R").join(" ")}] >>`));
+  for(let i=0;i<N;i++){ const im=imgs[i], bytes=new Uint8Array(await im.blob.arrayBuffer()), pw=595.28, ph=+(pw*im.h/im.w).toFixed(2), p=3+3*i;
+    obj(p,()=>push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im${i} ${p+1} 0 R >> >> /Contents ${p+2} 0 R >>`));
+    obj(p+1,()=>{ push(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bytes.length} >>\nstream\n`); push(bytes); push("\nendstream"); });
+    const cs=`q ${pw} 0 0 ${ph} 0 0 cm /Im${i} Do Q`; obj(p+2,()=>push(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`));
+  }
+  const xref=len, size=3+3*N; let t=`xref\n0 ${size}\n0000000000 65535 f \n`;
+  for(let k=1;k<size;k++) t+=String(offs[k]).padStart(10,"0")+" 00000 n \n";
+  push(t+`trailer\n<< /Size ${size} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(parts,{type:"application/pdf"});
+}
+const baseName=()=>($("#title").textContent||"악보").replace(/\.(pdf|jpe?g|png|webp)$/i,"").replace(/\s*\(샘플\)/,"").replace(/[\\/:*?"<>|]/g,"").trim().slice(0,40)||"악보";
+$("#eMake").onclick=async()=>{
+  const list=EX.range==="cur"?[cur]:Array.from({length:total},(_,i)=>i+1), withInk=$("#eInk").checked;
+  $("#eMake").disabled=true; $("#eProg").style.display="block"; $("#eReady").classList.remove("on");
+  try{
+    const imgs=[];
+    for(let i=0;i<list.length;i++){ $("#eMsg").textContent=`${i+1} / ${list.length}쪽 만드는 중…`; $("#eProg i").style.width=((i+1)/list.length*100)+"%"; imgs.push(await pageImage(list[i],withInk)); }
+    const nm=baseName()+(withInk?"_편집본":"");
+    if(EX.fmt==="pdf"){ const b=await buildPdf(imgs); EX.files=[new File([b],nm+".pdf",{type:"application/pdf"})]; }
+    else EX.files=imgs.map((im,i)=>new File([im.blob],`${nm}${imgs.length>1?"_"+String(list[i]).padStart(2,"0"):""}.jpg`,{type:"image/jpeg"}));
+    const sz=EX.files.reduce((a,f)=>a+f.size,0);
+    $("#eName").textContent=EX.files.length>1?`${EX.files[0].name} 외 ${EX.files.length-1}개`:EX.files[0].name;
+    $("#eSize").textContent=`${(sz/1048576).toFixed(1)} MB · ${list.length}쪽`;
+    const canShare=!!(navigator.canShare&&navigator.canShare({files:EX.files}));
+    $("#eShareBtn").style.display=canShare?"":"none";
+    $("#eHint").textContent=canShare?"공유하기를 누르면 에어드롭·블루투스·카카오톡·메일 등을 고를 수 있어요.":"이 브라우저는 바로 공유를 지원하지 않아요. 기기에 저장한 뒤 보내 주세요.";
+    $("#eMsg").textContent="준비됐어요."; $("#eReady").classList.add("on");
+  }catch(err){ console.error(err); $("#eMsg").textContent="파일을 만들지 못했어요. 다시 시도해 주세요."; }
+  $("#eMake").disabled=false;
+};
+$("#eShareBtn").onclick=async()=>{
+  try{ await navigator.share({files:EX.files,title:baseName()}); }
+  catch(e){ if(e.name!=="AbortError") toast("공유하지 못했어요. 기기에 저장해 주세요."); }
+};
+$("#eSave").onclick=()=>{
+  EX.files.forEach((f,i)=>setTimeout(()=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(f); a.download=f.name; document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); },i*350));
+  toast(EX.files.length>1?`${EX.files.length}개 파일을 저장했어요`:"저장했어요 · 다운로드 폴더를 확인하세요",2500);
+};
 
 /* ---------- 튜너 (마이크) ---------- */
 const NOTE=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"], SOL=["도","도#","레","레#","미","파","파#","솔","솔#","라","라#","시"];
