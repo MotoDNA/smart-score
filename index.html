@@ -362,6 +362,11 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
   <h3>화면</h3>
   <div class="row"><input type="checkbox" id="nextRight"> 오른쪽 동작 = 다음 페이지 (끄면 반대)</div>
   <div class="row"><input type="checkbox" id="twoUp"> 가로 화면에서 두 쪽씩 보기</div>
+  <h3>페이지 넘김 페달</h3>
+  <div class="note" style="margin-top:0">블루투스 페달은 연결만 하면 바로 됩니다 (← 이전 / → 다음, PageUp·PageDown도 됨). 다른 신호를 보내는 페달이면 아래에서 버튼을 직접 등록하세요.</div>
+  <div class="row"><button id="learnPrev" style="flex:1">이전 페달 등록</button><button id="learnNext" style="flex:1">다음 페달 등록</button></div>
+  <div class="row"><small id="pedalInfo"></small></div>
+  <div class="row"><small style="flex:1">방금 받은 신호: <b id="pedalLast" style="color:var(--ink)">—</b></small><button id="pedalReset">기본값으로</button></div>
   <h3>오프라인 사용</h3>
   <div class="note" id="offState" style="margin-top:0">확인 중…</div>
   <div class="btns"><button id="resetInst">이 악기 기본값으로 되돌리기</button></div>
@@ -502,6 +507,35 @@ if (!S || !PRESETS[S.inst]) S = {inst:"piano", cfg:{}, nextRight:true, twoUp:fal
 if((S.ver||1)<2){ for(const k in S.cfg){ const h=S.cfg[k].g.hand; h.th=.24; if(k==="piano") h.on=true; } S.ver=2; }
 S.metro=Object.assign({bpm:80,beats:4},S.metro||{});
 if(S.metro.shut===undefined) S.metro.shut=innerWidth<720; // 폰은 닫힌 서랍으로 시작
+/* ---------- 블루투스 페달 · 키보드 ---------- */
+S.pedal=Object.assign({next:[],prev:[]},S.pedal||{});
+const NEXT_KEYS=["ArrowRight","ArrowDown","PageDown"," ","Enter","MediaTrackNext"], PREV_KEYS=["ArrowLeft","ArrowUp","PageUp","MediaTrackPrevious"];
+let learning=null;
+function drawPedal(){
+  const f=a=>a.length?a.join(", "):"기본";
+  document.getElementById("pedalInfo").textContent=learning?`${learning==="next"?"다음":"이전"} 페달을 지금 밟아 주세요…`:`이전: ${f(S.pedal.prev)} · 다음: ${f(S.pedal.next)}`;
+}
+addEventListener("keydown",e=>{
+  const id=e.code||e.key, last=document.getElementById("pedalLast"); if(last) last.textContent=e.key===" "?"Space":(e.key+(e.code&&e.code!==e.key?` (${e.code})`:""));
+  if(learning){ e.preventDefault(); e.stopImmediatePropagation(); S.pedal[learning]=[id]; const which=learning; learning=null; save(); drawPedal(); toast(`${which==="next"?"다음":"이전"} 페달을 등록했어요`); return; }
+  const t=e.target, typing=t.matches&&t.matches('input:not([type=range]):not([type=checkbox]),textarea');
+  if(typing) return; // 메모·BPM 숫자를 입력하는 중에는 넘기지 않음
+  let dir=0;
+  if(S.pedal.next.includes(id)||S.pedal.next.includes(e.key)) dir=1;
+  else if(S.pedal.prev.includes(id)||S.pedal.prev.includes(e.key)) dir=-1;
+  else if(e.ctrlKey||e.metaKey||e.altKey) return;
+  else if(NEXT_KEYS.includes(e.key)) dir=1; else if(PREV_KEYS.includes(e.key)) dir=-1;
+  if(!dir) return;
+  e.preventDefault(); e.stopImmediatePropagation(); // 슬라이더·버튼에 신호가 새지 않게
+  if(e.repeat) return; // 페달을 누르고 있어도 한 장만
+  if(t&&t!==document.body&&t.blur) t.blur();
+  if(!$("#welcome").classList.contains("on")) go(dir);
+},true);
+document.getElementById("learnNext").onclick=()=>{ learning="next"; drawPedal(); };
+document.getElementById("learnPrev").onclick=()=>{ learning="prev"; drawPedal(); };
+document.getElementById("pedalReset").onclick=()=>{ S.pedal={next:[],prev:[]}; learning=null; save(); drawPedal(); toast("페달 설정을 기본값으로 되돌렸어요"); };
+drawPedal();
+
 function cfg(){ if(!S.cfg[S.inst]){ const p=clone(PRESETS[S.inst]); S.cfg[S.inst]={g:p.g, hold:p.hold, cool:p.cool, base:{head:0,mouth:0}}; } return S.cfg[S.inst]; }
 function save(){ try{ localStorage.setItem("smartScore.v1", JSON.stringify(S)); }catch(e){} }
 
@@ -909,11 +943,7 @@ $("#stage").addEventListener("pointerup",e=>{
   const r=e.clientX/w;
   if(r<.3) go(-1); else if(r>.7) go(+1); else { $("#bar").classList.toggle("hide"); setTimeout(()=>{cache.clear(); show();},300); }
 });
-addEventListener("keydown",e=>{
-  if(e.target.closest && e.target.closest("input,select")) return;
-  if(["ArrowRight","ArrowDown","PageDown"," ","Enter"].includes(e.key)){ e.preventDefault(); go(+1); }
-  else if(["ArrowLeft","ArrowUp","PageUp"].includes(e.key)){ e.preventDefault(); go(-1); }
-});
+
 let rz; addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(()=>{ cache.clear(); show(); },200); });
 document.addEventListener("visibilitychange",async()=>{ if(document.visibilityState==="visible" && camOn){ try{ wakeLock=await navigator.wakeLock?.request("screen"); }catch(e){} } });
 
