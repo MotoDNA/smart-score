@@ -47,6 +47,13 @@ button.primary:active{background:#000}
 #mDots i{width:9px;height:9px;border-radius:50%;border:1px solid var(--muted);transition:background .05s}
 #mDots i.hit{background:var(--ink);border-color:var(--ink)}
 #mDots i.hit.acc{background:var(--accent);border-color:var(--accent)}
+#mLight{display:none;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--sheet);align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 10px rgba(60,50,30,.15)}
+#mLight i{width:22px;height:22px;border-radius:50%;background:var(--soft);transition:background .12s ease-out,transform .12s ease-out}
+#mLight i.hit{background:var(--ink);transform:scale(1.12);transition:none}
+#mLight i.hit.acc{background:var(--accent)}
+#metro.mini{padding:0;border:0;background:transparent;box-shadow:none}
+#metro.mini>*{display:none!important}
+#metro.mini #mLight{display:flex!important}
 #metro .mBody{display:flex;flex-direction:column;gap:8px}
 #metro.closed .mBody{display:none}
 #metro small{color:var(--muted);font-size:12px}
@@ -129,6 +136,7 @@ input[type=range]{accent-color:var(--ink)}
   </header>
   <main id="stage">
     <div id="metro">
+      <div id="mLight" title="눌러서 메트로놈 설정 열기"><i></i></div>
       <div class="mrow">
         <button id="mPlay" title="시작/정지">시작</button>
         <button id="mMinus">−</button><input id="mBpm" type="number" min="30" max="240" inputmode="numeric"><button id="mPlus">+</button>
@@ -140,7 +148,6 @@ input[type=range]{accent-color:var(--ink)}
         <div class="mrow">
           <select id="mBeats"><option value="2">2/4</option><option value="3">3/4</option><option value="4">4/4</option><option value="6">6/8</option><option value="1">강세 없음</option></select>
           <button id="mTap">탭 템포</button>
-          <small>소리</small><input type="range" id="mVol" min="0" max="1" step="0.05" style="width:70px">
         </div>
       </div>
     </div>
@@ -547,44 +554,39 @@ addEventListener("keydown",e=>{
 let rz; addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(()=>{ cache.clear(); show(); },200); });
 document.addEventListener("visibilitychange",async()=>{ if(document.visibilityState==="visible" && camOn){ try{ wakeLock=await navigator.wakeLock?.request("screen"); }catch(e){} } });
 
-/* ---------- 메트로놈 (웹 오디오로 정확한 박자) ---------- */
-const M=S.metro; let actx=null, mOn=false, nextT=0, beat=0, mTimer=null, taps=[];
+/* ---------- 메트로놈 (소리 없이 불빛으로 박자 표시) ---------- */
+const M=S.metro; let mOn=false, t0=0, lastBeat=-1, raf=0, taps=[];
 const clampB=v=>Math.max(30,Math.min(240,Math.round(+v||80)));
 function mDraw(){
-  $("#mBpm").value=M.bpm; $("#mRange").value=M.bpm; $("#mBeats").value=M.beats; $("#mVol").value=M.vol;
+  $("#mBpm").value=M.bpm; $("#mRange").value=M.bpm; $("#mBeats").value=M.beats;
   $("#mDots").innerHTML="<i></i>".repeat(M.beats);
   $("#metro").classList.toggle("closed",!M.open); $("#mFold").textContent=M.open?"−":"+";
 }
-function setBpm(v){ M.bpm=clampB(v); save(); $("#mBpm").value=M.bpm; $("#mRange").value=M.bpm; }
-function tick(t,level){ // level 2=첫 박, 1=6/8의 넷째 박, 0=보통
-  const o=actx.createOscillator(), g=actx.createGain();
-  o.frequency.value=level===2?1600:level===1?1250:950;
-  const v=Math.max(.0002,M.vol*(level===2?1:.65));
-  g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(.0001,t+.05);
-  o.connect(g).connect(actx.destination); o.start(t); o.stop(t+.06);
+function setBpm(v){ M.bpm=clampB(v); save(); $("#mBpm").value=M.bpm; $("#mRange").value=M.bpm; if(mOn){ t0=performance.now()-0; lastBeat=-1; } }
+function light(b){
+  const acc=M.beats>1&&b===0;
+  [...$("#mDots").children].forEach((d,i)=>{ d.classList.toggle("hit",i===b); d.classList.toggle("acc",i===0&&M.beats>1); });
+  const L=$("#mLight i"); if(b<0){ L.className=""; return; }
+  L.className="hit"+(acc?" acc":""); setTimeout(()=>{ if(L.className.startsWith("hit")) L.className=""; },Math.min(140,30000/M.bpm));
 }
-function light(b){ const dots=$("#mDots").children; [...dots].forEach((d,i)=>{ d.classList.toggle("hit",i===b); d.classList.toggle("acc",i===0&&M.beats>1); }); }
-function schedule(){
-  while(nextT<actx.currentTime+.12){
-    const b=beat%M.beats, level=M.beats>1&&b===0?2:(M.beats===6&&b===3?1:0);
-    tick(nextT,level);
-    setTimeout(()=>{ if(mOn) light(b); },Math.max(0,(nextT-actx.currentTime)*1000));
-    nextT+=60/M.bpm; beat=(b+1)%M.beats;
-  }
+function mLoop(now){
+  if(!mOn) return; raf=requestAnimationFrame(mLoop);
+  const n=Math.floor((now-t0)/(60000/M.bpm));
+  if(n!==lastBeat){ lastBeat=n; light(((n%M.beats)+M.beats)%M.beats); }
 }
-async function mStart(){
-  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); await actx.resume(); }catch(e){ toast("이 기기에서 소리를 낼 수 없어요"); return; }
-  mOn=true; beat=0; nextT=actx.currentTime+.06; schedule(); mTimer=setInterval(schedule,25);
+function mStart(){
+  mOn=true; t0=performance.now(); lastBeat=-1; raf=requestAnimationFrame(mLoop);
   $("#mPlay").textContent="정지"; $("#mPlay").classList.add("on");
+  $("#metro").classList.add("mini"); // 시작하면 불빛만 남기고 접기
 }
-function mStop(){ mOn=false; clearInterval(mTimer); light(-1); $("#mPlay").textContent="시작"; $("#mPlay").classList.remove("on"); }
+function mStop(){ mOn=false; cancelAnimationFrame(raf); light(-1); $("#mPlay").textContent="시작"; $("#mPlay").classList.remove("on"); }
+$("#mLight").onclick=()=>$("#metro").classList.remove("mini"); // 불빛을 누르면 설정 다시 열기
 $("#mPlay").onclick=()=>mOn?mStop():mStart();
 $("#mMinus").onclick=()=>setBpm(M.bpm-1);
 $("#mPlus").onclick=()=>setBpm(M.bpm+1);
 $("#mBpm").onchange=e=>setBpm(e.target.value);
 $("#mRange").oninput=e=>setBpm(e.target.value);
-$("#mBeats").onchange=e=>{ M.beats=+e.target.value; beat=0; save(); mDraw(); };
-$("#mVol").oninput=e=>{ M.vol=+e.target.value; save(); };
+$("#mBeats").onchange=e=>{ M.beats=+e.target.value; save(); mDraw(); if(mOn){ t0=performance.now(); lastBeat=-1; } };
 $("#mFold").onclick=()=>{ M.open=!M.open; save(); mDraw(); };
 $("#mTap").onclick=()=>{ const n=performance.now(); taps=taps.filter(t=>n-t<2500); taps.push(n);
   if(taps.length>=2){ const gaps=taps.slice(1).map((t,i)=>t-taps[i]); setBpm(60000/(gaps.reduce((a,b)=>a+b)/gaps.length)); }
