@@ -526,6 +526,29 @@ const HAND_MODEL = new URL("./models/hand_landmarker.task", location.href).href;
 
 const $ = s => document.querySelector(s);
 
+/* ---------- 뒤로가기: 웹페이지를 닫지 않고 앱 안에서 한 단계씩 ---------- */
+const STEP_V={stepHome:"home",stepInst:"inst",stepLoad:"load"}, V_STEP={home:"stepHome",inst:"stepInst",load:"stepLoad"};
+let popping=false;
+history.replaceState({v:"home"},"");
+function navPush(st){ if(popping) return; const c=history.state||{}; if(c.v===st.v&&!c.ov) return; history.pushState(st,""); }
+function ovPush(name){ if(popping) return; const c=history.state||{v:"play"}; if(c.ov===name) return; history.pushState({v:c.v||"play",ov:name},""); }
+function closeOverlay(name){
+  if(name==="tuner"&&$("#tuner").classList.contains("on")) closeTuner();
+  if(name==="exp") $("#exp").classList.remove("on");
+  if(name==="drawer") $("#drawer").classList.remove("open");
+  if(name==="edit"&&editing) setEditing(false);
+}
+function ovClose(name){ if(history.state&&history.state.ov===name) history.back(); else closeOverlay(name); }
+addEventListener("popstate",e=>{
+  popping=true;
+  try{
+    const st=e.state||{v:"home"};
+    ["tuner","exp","drawer","edit"].forEach(o=>{ if(st.ov!==o) closeOverlay(o); });
+    if(st.v==="play"&&total){ $("#welcome").classList.remove("on"); if(st.ov==="edit"&&!editing) setEditing(true); }
+    else goStep(V_STEP[st.v]||(total?"stepLoad":"stepHome"));
+  }finally{ popping=false; }
+});
+
 /* ---------- 동작 정의 ---------- */
 const GESTURES = {
   head:  {label:"고개 돌리기", hint:"고개를 오른쪽(또는 왼쪽)으로 살짝 돌렸다가 돌아오기", min:.05, max:.35, step:.01, face:true},
@@ -659,8 +682,9 @@ async function openSample(){
   startUse();
 }
 function startUse(){
+  navPush({v:"play"});
   $("#welcome").classList.remove("on"); $("#empty").style.display="none";
-  if(startMode==="edit"){ show(); setEditing(true); return; } // 편집으로 시작: 카메라 없이 바로 편집 화면
+  if(startMode==="edit"){ show(); ovPush("edit"); setEditing(true); return; } // 편집으로 시작: 카메라 없이 바로 편집 화면
   $("#metro").classList.add("show"); show(); if(!camOn) startCam();
 }
 
@@ -937,7 +961,7 @@ $("#twoUp").onchange=e=>{ S.twoUp=e.target.checked; save(); cache.clear(); show(
 $("#resetInst").onclick=()=>{ delete S.cfg[S.inst]; save(); refreshAll(); toast("기본값으로 되돌렸어요. 기준 잡기를 다시 해 주세요."); };
 
 /* ---------- 버튼 / 터치 / 키보드 ---------- */
-function goStep(id){ document.querySelectorAll(".step").forEach(x=>x.classList.toggle("on",x.id===id)); $("#welcome").classList.add("on"); if(id==="stepInst") requestAnimationFrame(()=>{ centerTo(S.inst,false); onCarScroll(); }); }
+function goStep(id){ navPush({v:STEP_V[id]}); document.querySelectorAll(".step").forEach(x=>x.classList.toggle("on",x.id===id)); $("#welcome").classList.add("on"); if(id==="stepInst") requestAnimationFrame(()=>{ centerTo(S.inst,false); onCarScroll(); }); }
 $("#btnOpen").onclick=()=>goStep("stepLoad");
 $("#toLoad").onclick=()=>goStep("stepLoad");
 let startMode="play";
@@ -1006,8 +1030,8 @@ requestAnimationFrame(()=>{ centerTo(S.inst,false); onCarScroll(); });
 $("#wSample").onclick=openSample;
 $("#btnCam").onclick=()=>camOn?stopCam():startCam();
 $("#btnCal").onclick=calibrate;
-$("#btnSet").onclick=()=>$("#drawer").classList.add("open");
-$("#drawerClose").onclick=()=>$("#drawer").classList.remove("open");
+$("#btnSet").onclick=()=>{ ovPush("drawer"); $("#drawer").classList.add("open"); };
+$("#drawerClose").onclick=()=>ovClose("drawer");
 function applyHide(){ $("#cam").classList.toggle("hidevid",!!S.hideVid); $("#camHide").textContent=S.hideVid?"보기":"가리기"; }
 $("#camHide").onclick=()=>{ S.hideVid=!S.hideVid; save(); applyHide(); };
 applyHide();
@@ -1223,7 +1247,7 @@ function setEditing(v){
 function undo(){ const u=undoStack.pop(); if(!u) return; redoStack.push({k:u.k,prev:JSON.stringify(INK[u.k]||[])}); INK[u.k]=JSON.parse(u.prev); saveInk(); redrawAll(); updUndo(); }
 function redo(){ const u=redoStack.pop(); if(!u) return; undoStack.push({k:u.k,prev:JSON.stringify(INK[u.k]||[])}); INK[u.k]=JSON.parse(u.prev); saveInk(); redrawAll(); updUndo(); }
 $("#inkUndo").onclick=undo; $("#inkRedo").onclick=redo;
-$("#btnInk").onclick=()=>{ if(!total){ toast("먼저 악보를 열어 주세요"); return; } setEditing(!editing); };
+$("#btnInk").onclick=()=>{ if(!total){ toast("먼저 악보를 열어 주세요"); return; } if(editing) ovClose("edit"); else { ovPush("edit"); setEditing(true); } };
 $("#edPrev").onclick=()=>go(-1); $("#edNext").onclick=()=>go(+1);
 $("#edClear").onclick=()=>{ const ks=[...document.querySelectorAll(".pgw")].map(w=>pageKey(+w.dataset.n)); ks.forEach(k=>{ remember(k); INK[k]=[]; }); saveInk(); redrawAll(); toast("이 쪽을 비웠어요 · 되돌리기로 살릴 수 있어요",1800); };
 addEventListener("keydown",e=>{ if(!editing||e.target.closest?.("input")) return;
@@ -1242,8 +1266,8 @@ $("#eInk").onchange=resetExp;
 function resetExp(){ EX.files=null; $("#eReady").classList.remove("on"); $("#eMsg").textContent=""; $("#eProg").style.display="none"; }
 function openExp(){ if(!total){ toast("먼저 악보를 열어 주세요"); return; }
   $("#eAll").textContent=`전체 ${total}쪽`; $("#eCur").textContent=`지금 보는 쪽 (${cur})`; resetExp(); $("#exp").classList.add("on"); }
-$("#btnShare").onclick=openExp; $("#eClose").onclick=()=>$("#exp").classList.remove("on");
-$("#exp").addEventListener("pointerdown",e=>{ if(e.target.id==="exp") $("#exp").classList.remove("on"); });
+$("#btnShare").onclick=()=>{ if(!total){ toast("먼저 악보를 열어 주세요"); return; } ovPush("exp"); openExp(); }; $("#eClose").onclick=()=>ovClose("exp");
+$("#exp").addEventListener("pointerdown",e=>{ if(e.target.id==="exp") ovClose("exp"); });
 ["pointerdown","pointerup"].forEach(ev=>$("#exp").addEventListener(ev,e=>e.stopPropagation()));
 async function pageImage(n,withInk){
   const base=await renderPage(n,1240,1754), c=document.createElement("canvas"); c.width=base.width; c.height=base.height;
@@ -1351,9 +1375,9 @@ function tLoop(now=0){
   let best=null,bd=99; document.querySelectorAll("#tStr span").forEach(x=>{ const dd=Math.abs(n-+x.dataset.m); if(dd<bd){bd=dd;best=x;} x.classList.remove("near","ok"); });
   if(best&&bd<2.5){ best.classList.add("near"); if(Math.abs(n-+best.dataset.m)*100<=5) best.classList.add("ok"); }
 }
-$("#btnTune").onclick=openTuner;
-$("#tClose").onclick=closeTuner;
-$("#tuner").addEventListener("pointerdown",e=>{ if(e.target.id==="tuner") closeTuner(); });
+$("#btnTune").onclick=()=>{ ovPush("tuner"); openTuner(); };
+$("#tClose").onclick=()=>ovClose("tuner");
+$("#tuner").addEventListener("pointerdown",e=>{ if(e.target.id==="tuner") ovClose("tuner"); });
 $("#aMinus").onclick=()=>{ S.a4=Math.max(430,S.a4-1); save(); $("#aVal").textContent=S.a4; };
 $("#aPlus").onclick=()=>{ S.a4=Math.min(450,S.a4+1); save(); $("#aVal").textContent=S.a4; };
 
