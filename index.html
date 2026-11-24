@@ -152,6 +152,29 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
 .fbar{display:none;gap:8px;margin-top:12px;align-items:center;font-size:13px;color:var(--muted)}
 .fbar.on{display:flex}
 .fbar span{flex:1}
+/* tuner */
+#tuner{position:fixed;inset:0;z-index:45;display:none;align-items:center;justify-content:center;background:rgba(245,241,232,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);padding:16px}
+#tuner.on{display:flex}
+.tcard{position:relative;width:min(440px,100%);background:var(--sheet);border:1px solid var(--line);border-radius:10px;box-shadow:0 18px 50px rgba(60,50,30,.18);padding:18px 20px 20px;text-align:center;animation:pop .4s cubic-bezier(.3,1.5,.5,1)}
+.thead{display:flex;align-items:center;justify-content:space-between;font-family:"Gowun Batang",serif;font-size:18px;font-weight:700}
+.thead button{font-family:"Noto Sans KR",sans-serif;font-weight:400;font-size:14px;padding:5px 10px}
+#tGauge{width:100%;max-width:340px;display:block;margin:10px auto 0}
+#tNeedle{transform-origin:150px 150px;transition:transform .09s linear}
+.tnote{font-family:"Gowun Batang",serif;font-size:76px;line-height:1;margin-top:-4px;transition:color .2s}
+.tnote sub{font-size:24px;color:var(--muted);vertical-align:baseline;margin-left:2px}
+.tnote.ok{color:var(--ok)}
+.tsol{color:var(--muted);font-size:14px;margin-top:4px;min-height:20px}
+.tcents{font-family:"Gowun Batang",serif;font-size:18px;margin-top:8px;min-height:24px}
+.tcents.ok{color:var(--ok)}
+.tfreq{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.tstr{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:14px;min-height:34px}
+.tstr span{min-width:42px;padding:6px 8px;border:1px solid var(--line);border-radius:18px;font-size:13px;transition:all .2s}
+.tstr span.near{border-color:var(--ink);background:var(--ink);color:#fff}
+.tstr span.near.ok{border-color:var(--ok);background:var(--ok)}
+.tfoot{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;font-size:13px;color:var(--muted)}
+.tfoot button{padding:3px 10px}
+.tfoot b{font-family:"Gowun Batang",serif;color:var(--ink);font-size:16px;min-width:54px}
+.tmsg{font-size:13px;color:var(--muted);margin-top:10px;min-height:18px}
 /* overlays */
 .overlay{position:fixed;inset:0;background:var(--paper);z-index:40;display:none;align-items:center;justify-content:center;padding:24px}
 .overlay.on{display:flex}
@@ -198,6 +221,7 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
     <div id="pageInfo">– / –</div>
     <button id="btnCam">카메라 켜기</button>
     <button id="btnCal"><span class="L">기준 맞추기</span><span class="S">기준</span></button>
+    <button id="btnTune">튜너</button>
     <button id="btnSet">설정</button>
     <button id="btnFull"><span class="L">전체화면</span><span class="S">전체</span></button>
   </header>
@@ -275,6 +299,30 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
     <div class="stepFoot"><button id="backInst">악기 다시 고르기</button><button class="primary" id="goPlay">연주 시작</button></div>
     <button class="link" id="wSample">악보 없이 샘플로 해보기</button>
   </section>
+</div>
+
+<div id="tuner">
+  <div class="tcard">
+    <div class="thead"><span>튜너</span><button id="tClose">닫기</button></div>
+    <svg id="tGauge" viewBox="0 0 300 172">
+      <path d="M30 150a120 120 0 0 1 240 0" fill="none" stroke="#ebe5d8" stroke-width="14" stroke-linecap="round"/>
+      <path id="tZone" d="M137.5 31.6a120 120 0 0 1 25 0" fill="none" stroke="#2e6a43" stroke-width="14" opacity=".35"/>
+      <g stroke="#7a7368" stroke-width="1.5">
+        <line x1="150" y1="22" x2="150" y2="40"/>
+        <line x1="150" y1="22" x2="150" y2="34" transform="rotate(-30 150 150)"/><line x1="150" y1="22" x2="150" y2="34" transform="rotate(30 150 150)"/>
+        <line x1="150" y1="22" x2="150" y2="34" transform="rotate(-60 150 150)"/><line x1="150" y1="22" x2="150" y2="34" transform="rotate(60 150 150)"/>
+      </g>
+      <text x="38" y="168" font-size="11" fill="#7a7368" text-anchor="middle">−50</text><text x="262" y="168" font-size="11" fill="#7a7368" text-anchor="middle">+50</text>
+      <g id="tNeedle"><line x1="150" y1="150" x2="150" y2="44" stroke="#8e2a1d" stroke-width="3" stroke-linecap="round"/><circle cx="150" cy="150" r="7" fill="#1d1b18"/></g>
+    </svg>
+    <div class="tnote" id="tNote">–</div>
+    <div class="tsol" id="tSol">소리를 내 보세요</div>
+    <div class="tcents" id="tCents"></div>
+    <div class="tfreq" id="tFreq"></div>
+    <div class="tstr" id="tStr"></div>
+    <div class="tmsg" id="tMsg"></div>
+    <div class="tfoot">기준음 A4 <button id="aMinus">−</button><b id="aVal">440</b><button id="aPlus">+</button> Hz</div>
+  </div>
 </div>
 
 <div class="overlay" id="calib">
@@ -770,6 +818,65 @@ $("#mTap").onclick=()=>{ const n=performance.now(); taps=taps.filter(t=>n-t<2500
 // 메트로놈을 눌러도 악보가 넘어가지 않게
 ["pointerdown","pointerup"].forEach(ev=>$("#metro").addEventListener(ev,e=>e.stopPropagation()));
 mDraw();
+
+/* ---------- 튜너 (마이크) ---------- */
+const NOTE=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"], SOL=["도","도#","레","레#","미","파","파#","솔","솔#","라","라#","시"];
+const OPEN={ violin:{label:"바이올린 · 비올라",notes:["C3","G3","D4","A4","E5"]}, cello:{label:"첼로",notes:["C2","G2","D3","A3"]}, guitar:{label:"기타",notes:["E2","A2","D3","G3","B3","E4"]} };
+S.a4=S.a4||440;
+let tCtx=null, tStream=null, tAn=null, tBuf=null, tRaf=0, tHist=[], tLast=0;
+const midiOf=name=>{ const m=name.match(/^([A-G]#?)(\d)$/); return NOTE.indexOf(m[1])+12*(+m[2]+1); };
+function drawStrings(){ const o=OPEN[S.inst]; $("#tStr").innerHTML=o?o.notes.map(n=>`<span data-m="${midiOf(n)}">${n.replace(/\d/,"")}<sub style="font-size:10px">${n.slice(-1)}</sub></span>`).join(""):""; }
+async function openTuner(){
+  $("#tuner").classList.add("on"); $("#aVal").textContent=S.a4; drawStrings(); $("#tMsg").textContent="";
+  if(tStream) return;
+  try{
+    tStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  }catch(e){ $("#tMsg").textContent="마이크 권한이 필요해요. 주소창 옆 자물쇠 → 마이크 허용 후 다시 눌러 주세요."; return; }
+  tCtx=new (window.AudioContext||window.webkitAudioContext)(); await tCtx.resume();
+  const src=tCtx.createMediaStreamSource(tStream); tAn=tCtx.createAnalyser(); tAn.fftSize=4096; src.connect(tAn);
+  tBuf=new Float32Array(tAn.fftSize); tHist=[]; tLoop();
+}
+function closeTuner(){
+  $("#tuner").classList.remove("on"); cancelAnimationFrame(tRaf);
+  tStream?.getTracks().forEach(t=>t.stop()); tStream=null; try{ tCtx?.close(); }catch(e){} tCtx=null;
+}
+/* 음높이 찾기 (YIN 방식) */
+function detectPitch(buf,sr){
+  let rms=0; for(let i=0;i<buf.length;i++) rms+=buf[i]*buf[i]; rms=Math.sqrt(rms/buf.length);
+  if(rms<.008) return 0;
+  const W=Math.floor(buf.length/2), minL=Math.floor(sr/1400), maxL=Math.min(W-1,Math.floor(sr/38));
+  const d=new Float32Array(maxL+1); let run=0; d[0]=1;
+  for(let t=1;t<=maxL;t++){ let s=0; for(let i=0;i<W;i++){ const x=buf[i]-buf[i+t]; s+=x*x; } run+=s; d[t]=run?s*t/run:1; }
+  let tau=-1; for(let t=minL;t<=maxL;t++){ if(d[t]<.12){ while(t+1<=maxL&&d[t+1]<d[t]) t++; tau=t; break; } }
+  if(tau<0) return 0;
+  const a=d[tau-1]||d[tau], b=d[tau], c=d[tau+1]||d[tau], den=a+c-2*b;
+  return sr/(tau+(den? (a-c)/(2*den):0));
+}
+function tLoop(now=0){
+  tRaf=requestAnimationFrame(tLoop);
+  if(now-tLast<45) return; tLast=now;
+  tAn.getFloatTimeDomainData(tBuf);
+  const f=detectPitch(tBuf,tCtx.sampleRate);
+  if(f>30&&f<2000){ tHist.push({t:now,f}); }
+  tHist=tHist.filter(x=>now-x.t<300);
+  if(!tHist.length){ $("#tNote").classList.remove("ok"); $("#tCents").textContent=""; $("#tCents").classList.remove("ok"); $("#tFreq").textContent=""; $("#tSol").textContent="소리를 내 보세요";
+    $("#tNeedle").style.transform="rotate(0deg)"; document.querySelectorAll("#tStr span").forEach(x=>x.classList.remove("near","ok")); return; }
+  const fs=tHist.map(x=>x.f).sort((a,b)=>a-b), fr=fs[fs.length>>1];
+  const n=12*Math.log2(fr/S.a4)+69, m=Math.round(n), cents=Math.round((n-m)*100), ok=Math.abs(cents)<=5;
+  $("#tNote").innerHTML=`${NOTE[m%12]}<sub>${Math.floor(m/12)-1}</sub>`; $("#tNote").classList.toggle("ok",ok);
+  $("#tSol").textContent=SOL[m%12];
+  $("#tCents").textContent=ok?"맞았어요":(cents<0?`${-cents} 센트 낮아요 — 조금 올리세요`:`${cents} 센트 높아요 — 조금 내리세요`); $("#tCents").classList.toggle("ok",ok);
+  $("#tFreq").textContent=fr.toFixed(1)+" Hz";
+  $("#tNeedle").style.transform=`rotate(${Math.max(-60,Math.min(60,cents*1.2))}deg)`;
+  // 가장 가까운 개방현 표시
+  let best=null,bd=99; document.querySelectorAll("#tStr span").forEach(x=>{ const dd=Math.abs(n-+x.dataset.m); if(dd<bd){bd=dd;best=x;} x.classList.remove("near","ok"); });
+  if(best&&bd<2.5){ best.classList.add("near"); if(Math.abs(n-+best.dataset.m)*100<=5) best.classList.add("ok"); }
+}
+$("#btnTune").onclick=openTuner;
+$("#tClose").onclick=closeTuner;
+$("#tuner").addEventListener("pointerdown",e=>{ if(e.target.id==="tuner") closeTuner(); });
+$("#aMinus").onclick=()=>{ S.a4=Math.max(430,S.a4-1); save(); $("#aVal").textContent=S.a4; };
+$("#aPlus").onclick=()=>{ S.a4=Math.min(450,S.a4+1); save(); $("#aVal").textContent=S.a4; };
 
 refreshAll();
 
