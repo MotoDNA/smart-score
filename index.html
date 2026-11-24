@@ -37,7 +37,13 @@ button.primary:active{background:#000}
 .flash.on{opacity:1}
 #empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:"Gowun Batang",serif}
 /* metronome */
-#metro{position:absolute;top:12px;left:12px;z-index:15;background:var(--sheet);border:1px solid var(--line);border-radius:4px;padding:8px 10px;display:none;flex-direction:column;gap:8px;box-shadow:0 2px 10px rgba(60,50,30,.1);touch-action:manipulation}
+#metro{position:absolute;top:12px;left:0;z-index:15;background:var(--sheet);border:1px solid var(--line);border-left:0;border-radius:0 4px 4px 0;padding:8px 10px 8px 12px;display:none;flex-direction:column;gap:8px;box-shadow:0 2px 10px rgba(60,50,30,.1);touch-action:manipulation;transition:transform .28s cubic-bezier(.3,.7,.2,1)}
+#metro.shut{transform:translateX(-100%);box-shadow:none}
+#mHandle{position:absolute;right:-30px;bottom:-1px;width:30px;height:64px;background:var(--sheet);border:1px solid var(--line);border-left:0;border-radius:0 6px 6px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;cursor:pointer;box-shadow:3px 2px 8px rgba(60,50,30,.08)}
+#mHandle .grip{width:3px;height:16px;border-left:1px solid var(--muted);border-right:1px solid var(--muted)}
+#mHandle i{width:12px;height:12px;border-radius:50%;background:var(--soft);transition:background .12s ease-out,transform .12s ease-out}
+#mHandle i.hit{background:var(--ink);transform:scale(1.15);transition:none}
+#mHandle i.hit.acc{background:var(--accent)}
 #metro.show{display:flex}
 #metro .mrow{display:flex;align-items:center;gap:6px}
 #metro button{padding:5px 9px;min-width:34px}
@@ -49,15 +55,7 @@ button.primary:active{background:#000}
 #mDots i{width:9px;height:9px;border-radius:50%;border:1px solid var(--muted);transition:background .05s}
 #mDots i.hit{background:var(--ink);border-color:var(--ink)}
 #mDots i.hit.acc{background:var(--accent);border-color:var(--accent)}
-#mLight{display:none;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--sheet);align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 10px rgba(60,50,30,.15)}
-#mLight i{width:22px;height:22px;border-radius:50%;background:var(--soft);transition:background .12s ease-out,transform .12s ease-out}
-#mLight i.hit{background:var(--ink);transform:scale(1.12);transition:none}
-#mLight i.hit.acc{background:var(--accent)}
-#metro.mini{padding:0;border:0;background:transparent;box-shadow:none}
-#metro.mini>*{display:none!important}
-#metro.mini #mLight{display:flex!important}
 #metro .mBody{display:flex;flex-direction:column;gap:8px}
-#metro.closed .mBody{display:none}
 #metro small{color:var(--muted);font-size:12px}
 /* camera */
 #cam{position:fixed;right:14px;bottom:14px;width:250px;background:var(--sheet);border:1px solid var(--line);border-radius:4px;overflow:hidden;z-index:20;display:none;box-shadow:0 2px 12px rgba(60,50,30,.12)}
@@ -130,7 +128,7 @@ input[type=range]{accent-color:var(--ink)}
   #instBadge{display:none}
   #title{font-size:14px;min-width:40px}
   #pageInfo{min-width:48px;font-size:14px}
-  #metro{top:8px;left:8px;padding:6px;gap:6px}
+  #metro{top:8px;padding:6px 6px 6px 8px;gap:6px}
   #metro .mrow{gap:4px}
   #metro button{padding:4px 7px;min-width:30px;font-size:13px}
   #mPlay{min-width:46px!important}
@@ -157,12 +155,11 @@ input[type=range]{accent-color:var(--ink)}
   </header>
   <main id="stage">
     <div id="metro">
-      <div id="mLight" title="눌러서 메트로놈 설정 열기"><i></i></div>
+      <div id="mHandle" title="메트로놈 서랍 열기/닫기"><span class="grip"></span><i></i></div>
       <div class="mrow">
         <button id="mPlay" title="시작/정지">시작</button>
         <button id="mMinus">−</button><input id="mBpm" type="number" min="30" max="240" inputmode="numeric"><button id="mPlus">+</button>
         <div id="mDots"></div>
-        <button id="mFold" title="접기/펴기">−</button>
       </div>
       <div class="mBody">
         <input type="range" id="mRange" min="30" max="240" step="1">
@@ -274,7 +271,8 @@ const clone = o => JSON.parse(JSON.stringify(o));
 let S;
 try { S = JSON.parse(localStorage.getItem("smartScore.v1")); } catch(e) {}
 if (!S || !PRESETS[S.inst]) S = {inst:"piano", cfg:{}, nextRight:true, twoUp:false, hideVid:false};
-S.metro=Object.assign({bpm:80,beats:4,vol:.7,open:true},S.metro||{});
+S.metro=Object.assign({bpm:80,beats:4},S.metro||{});
+if(S.metro.shut===undefined) S.metro.shut=innerWidth<720; // 폰은 닫힌 서랍으로 시작
 function cfg(){ if(!S.cfg[S.inst]){ const p=clone(PRESETS[S.inst]); S.cfg[S.inst]={g:p.g, hold:p.hold, cool:p.cool, base:{head:0,mouth:0}}; } return S.cfg[S.inst]; }
 function save(){ try{ localStorage.setItem("smartScore.v1", JSON.stringify(S)); }catch(e){} }
 
@@ -588,13 +586,13 @@ const clampB=v=>Math.max(30,Math.min(240,Math.round(+v||80)));
 function mDraw(){
   $("#mBpm").value=M.bpm; $("#mRange").value=M.bpm; $("#mBeats").value=M.beats;
   $("#mDots").innerHTML="<i></i>".repeat(M.beats);
-  $("#metro").classList.toggle("closed",!M.open); $("#mFold").textContent=M.open?"−":"+";
+  $("#metro").classList.toggle("shut",!!M.shut);
 }
 function setBpm(v){ M.bpm=clampB(v); save(); $("#mBpm").value=M.bpm; $("#mRange").value=M.bpm; if(mOn){ t0=performance.now()-0; lastBeat=-1; } }
 function light(b){
   const acc=M.beats>1&&b===0;
   [...$("#mDots").children].forEach((d,i)=>{ d.classList.toggle("hit",i===b); d.classList.toggle("acc",i===0&&M.beats>1); });
-  const L=$("#mLight i"); if(b<0){ L.className=""; return; }
+  const L=$("#mHandle i"); if(b<0){ L.className=""; return; }
   L.className="hit"+(acc?" acc":""); setTimeout(()=>{ if(L.className.startsWith("hit")) L.className=""; },Math.min(140,30000/M.bpm));
 }
 function mLoop(now){
@@ -605,17 +603,17 @@ function mLoop(now){
 function mStart(){
   mOn=true; t0=performance.now(); lastBeat=-1; raf=requestAnimationFrame(mLoop);
   $("#mPlay").textContent="정지"; $("#mPlay").classList.add("on");
-  $("#metro").classList.add("mini"); // 시작하면 불빛만 남기고 접기
+  setShut(true); // 시작하면 서랍을 닫고 손잡이 불빛으로 박자 표시
 }
 function mStop(){ mOn=false; cancelAnimationFrame(raf); light(-1); $("#mPlay").textContent="시작"; $("#mPlay").classList.remove("on"); }
-$("#mLight").onclick=()=>$("#metro").classList.remove("mini"); // 불빛을 누르면 설정 다시 열기
+function setShut(v){ M.shut=v; save(); $("#metro").classList.toggle("shut",v); }
+$("#mHandle").onclick=()=>setShut(!M.shut); // 손잡이: 서랍 열기/닫기
 $("#mPlay").onclick=()=>mOn?mStop():mStart();
 $("#mMinus").onclick=()=>setBpm(M.bpm-1);
 $("#mPlus").onclick=()=>setBpm(M.bpm+1);
 $("#mBpm").onchange=e=>setBpm(e.target.value);
 $("#mRange").oninput=e=>setBpm(e.target.value);
 $("#mBeats").onchange=e=>{ M.beats=+e.target.value; save(); mDraw(); if(mOn){ t0=performance.now(); lastBeat=-1; } };
-$("#mFold").onclick=()=>{ M.open=!M.open; save(); mDraw(); };
 $("#mTap").onclick=()=>{ const n=performance.now(); taps=taps.filter(t=>n-t<2500); taps.push(n);
   if(taps.length>=2){ const gaps=taps.slice(1).map((t,i)=>t-taps[i]); setBpm(60000/(gaps.reduce((a,b)=>a+b)/gaps.length)); }
   else toast("박자에 맞춰 몇 번 더 눌러 주세요",1200); };
