@@ -22,7 +22,9 @@ button.primary:active{background:#000}
 #app{display:flex;flex-direction:column;height:100%}
 #bar{display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--paper);border-bottom:1px solid var(--line);transition:margin .25s}
 #bar.hide{margin-top:-58px}
-#bar button{border-color:transparent;padding:7px 10px}
+#bar button{border-color:transparent;padding:7px 10px;white-space:nowrap;flex:none}
+.S{display:none}
+#bar{white-space:nowrap}
 #bar button:hover{border-color:var(--line)}
 #title{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:"Gowun Batang",serif;font-size:16px}
 #pageInfo{font-family:"Gowun Batang",serif;font-variant-numeric:tabular-nums;min-width:64px;text-align:center;font-size:16px}
@@ -120,19 +122,38 @@ input[type=range]{accent-color:var(--ink)}
 #calibNum{font-family:"Gowun Batang",serif;font-size:96px;text-align:center;margin:10px 0;color:var(--accent)}
 #toast{position:fixed;left:50%;top:66px;transform:translateX(-50%);background:var(--ink);color:var(--sheet);padding:9px 16px;border-radius:4px;font-size:14px;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center}
 #toast.on{opacity:1}
+@media (max-width:720px){
+  #bar{gap:0;padding:6px 6px;overflow-x:auto;scrollbar-width:none}
+  #bar::-webkit-scrollbar{display:none}
+  #bar button{padding:7px 8px;font-size:14px}
+  .L{display:none}.S{display:inline}
+  #instBadge{display:none}
+  #title{font-size:14px;min-width:40px}
+  #pageInfo{min-width:48px;font-size:14px}
+  #metro{top:8px;left:8px;padding:6px;gap:6px}
+  #metro .mrow{gap:4px}
+  #metro button{padding:4px 7px;min-width:30px;font-size:13px}
+  #mPlay{min-width:46px!important}
+  #mBpm{width:44px;font-size:18px}
+  #mDots{display:none}
+  #cam{width:min(200px,46vw);right:8px;bottom:8px}
+  #camHead{flex-wrap:wrap}
+  #camStatus{flex-basis:100%;font-size:11px}
+  .g{margin-top:5px}
+}
 </style>
 </head>
 <body>
 <div id="app">
   <header id="bar">
-    <button id="btnOpen">악보 열기</button>
+    <button id="btnOpen"><span class="L">악보 열기</span><span class="S">열기</span></button>
     <div id="title">Hands-free Score</div>
     <span id="instBadge"></span>
     <div id="pageInfo">– / –</div>
     <button id="btnCam">카메라 켜기</button>
-    <button id="btnCal">기준 맞추기</button>
+    <button id="btnCal"><span class="L">기준 맞추기</span><span class="S">기준</span></button>
     <button id="btnSet">설정</button>
-    <button id="btnFull">전체화면</button>
+    <button id="btnFull"><span class="L">전체화면</span><span class="S">전체</span></button>
   </header>
   <main id="stage">
     <div id="metro">
@@ -346,15 +367,17 @@ function go(dir){ // dir: +1 다음, -1 이전
 
 /* ---------- 카메라 + 동작 인식 ---------- */
 const video=$("#video");
-let modelErr=false, camOn=false, stream=null, vision=null, fileset=null, faceLM=null, handLM=null, loadingFace=false, loadingHand=false, wakeLock=null;
+let usedGPU=false, noFaceSince=0, triedCPU=false, modelErr=false, camOn=false, stream=null, vision=null, fileset=null, faceLM=null, handLM=null, loadingFace=false, loadingHand=false, wakeLock=null;
 let lastFrame=0, faceRes=null, handRes=null, faceSeen=false, handSeen=false, lastTrigger=0, lastRaw={head:0,mouth:0};
 const G={}; for(const k in GESTURES) G[k]={dir:0,since:0,armed:true,val:0};
 const handHist=[];
 
 async function getVision(){ if(!vision){ vision=await import(MP+"/vision_bundle.mjs"); fileset=await vision.FilesetResolver.forVisionTasks(MP+"/wasm"); } return vision; }
+let forceCPU=false;
 async function make(Cls, model, extra){
   for(const delegate of ["GPU","CPU"]){
-    try{ return await Cls.createFromOptions(fileset,{baseOptions:{modelAssetPath:model, delegate}, runningMode:"VIDEO", ...extra}); }catch(e){ console.warn(delegate,"실패",e); }
+    if(delegate==="GPU" && forceCPU) continue;
+    try{ const r=await Cls.createFromOptions(fileset,{baseOptions:{modelAssetPath:model, delegate}, runningMode:"VIDEO", ...extra}); if(Cls===vision.FaceLandmarker) usedGPU=(delegate==="GPU"); return r; }catch(e){ console.warn(delegate,"실패",e); }
   }
   throw new Error("모델 불러오기 실패");
 }
@@ -376,13 +399,13 @@ async function startCam(){
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:false});
   }catch(e){ console.error(e); toast("카메라 권한이 필요해요. 주소창 옆 자물쇠 → 카메라 허용",4000); return; }
   video.srcObject=stream; await video.play().catch(()=>{});
-  camOn=true; $("#cam").classList.add("on"); $("#btnCam").textContent="카메라 끄기";
+  camOn=true; $("#cam").classList.add("on"); $("#btnCam").innerHTML='<span class="L">카메라 끄기</span><span class="S">카메라 끔</span>';
   try{ wakeLock=await navigator.wakeLock?.request("screen"); }catch(e){}
   buildGauges(); await ensureModels(); requestAnimationFrame(loop);
 }
 function stopCam(){
   camOn=false; stream?.getTracks().forEach(t=>t.stop()); stream=null; video.srcObject=null;
-  $("#cam").classList.remove("on"); $("#btnCam").textContent="카메라 켜기";
+  $("#cam").classList.remove("on"); $("#btnCam").innerHTML='<span class="L">카메라 켜기</span><span class="S">카메라</span>';
   try{ wakeLock?.release(); }catch(e){} wakeLock=null;
 }
 
@@ -403,6 +426,11 @@ function process(now){
   const c=cfg(), vals={head:0,mouth:0,wink:0,hand:0};
   const f=faceRes?.faceLandmarks?.[0];
   faceSeen=!!f;
+  // 일부 태블릿·폰은 GPU 처리에서 얼굴을 못 찾는 경우가 있어, 6초간 못 찾으면 CPU 방식으로 한 번 바꿔 봅니다
+  if(faceLM && needFace()){
+    if(f) noFaceSince=0; else if(!noFaceSince) noFaceSince=now;
+    else if(usedGPU && !triedCPU && now-noFaceSince>6000){ triedCPU=true; forceCPU=true; const old=faceLM; faceLM=null; noFaceSince=0; try{old.close();}catch(e){} ensureModels(); }
+  }
   if(f){
     // 화면을 거울처럼 뒤집은 좌표 기준: +값 = 연주자의 오른쪽
     const L=1-f[234].x, R=1-f[454].x, N=1-f[1].x, w=Math.abs(R-L)||1e-3;
