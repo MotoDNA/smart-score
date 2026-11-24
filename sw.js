@@ -1,5 +1,5 @@
 // 핸즈프리 악보 — 오프라인 저장용 (버전을 올리면 새 파일로 교체됩니다)
-const VERSION = "smart-score-v1";
+const VERSION = "smart-score-v2";
 const FILES = [
   "./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png",
   "./vendor/pdf.min.mjs", "./vendor/pdf.worker.min.mjs", "./vendor/vision_bundle.mjs",
@@ -16,6 +16,11 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
+  // 화면(index.html)은 인터넷이 되면 항상 최신으로, 안 되면 저장본으로
+  if (req.mode === "navigate") {
+    e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put("./index.html", copy)); return res; }).catch(() => caches.match("./index.html")));
+    return;
+  }
   e.respondWith(
     caches.match(req, { ignoreSearch: true }).then(hit => hit || fetch(req).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
