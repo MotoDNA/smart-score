@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#f5f1e8">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon-192.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
-<title>핸즈프리 악보 — 시제품</title>
+<title>ScoreTurn — 핸즈프리 악보</title>
 <style>
 :root{--paper:#f5f1e8;--sheet:#fffdf8;--ink:#1d1b18;--muted:#7a7368;--line:#d8d1c3;--soft:#ebe5d8;--accent:#8e2a1d;--ok:#2e6a43;--warn:#b07a1c}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -250,6 +251,8 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
 #stepHome{align-items:center;justify-content:center;text-align:center;min-height:100%}
 #stepHome .eyebrow{margin-bottom:10px}
 #stepHome h1{font-size:clamp(40px,9vw,64px);letter-spacing:-.02em}
+#stepHome .homeLogo{width:min(78vw,380px);height:auto;display:block;margin:0 auto}
+#stepHome .homeSub{margin:14px 0 0}
 #stepHome .line{width:1px;height:56px;background:var(--line);margin:26px auto}
 .homeBtns{display:flex;gap:clamp(28px,7vw,56px);justify-content:center;align-items:flex-start}
 .hb{display:flex;flex-direction:column;align-items:center;gap:12px;border:0;background:none;padding:0;color:var(--ink)}
@@ -408,8 +411,8 @@ button.link{border:0;background:none;color:var(--muted);text-decoration:underlin
 
 <div class="overlay on" id="welcome">
   <section class="step on" id="stepHome">
-    <div class="eyebrow">Hands-free Score</div>
-    <h1>악보</h1>
+    <img class="homeLogo" src="img/logo.svg" alt="ScoreTurn">
+    <div class="eyebrow homeSub">핸즈프리 악보</div>
     <div class="line"></div>
     <div class="homeBtns">
       <button class="hb play" id="goPlayMode"><span class="disc"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg></span><b>악보 재생</b><small>Play</small></button>

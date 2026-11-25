@@ -1,5 +1,5 @@
 // 핸즈프리 악보 — 오프라인 저장용 (버전을 올리면 새 파일로 교체됩니다)
-const VERSION = "smart-score-v5";
+const VERSION = "smart-score-v6";
 const FILES = [
   "./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png",
   "./vendor/pdf.min.mjs", "./vendor/pdf.worker.min.mjs", "./vendor/vision_bundle.mjs",
@@ -7,7 +7,7 @@ const FILES = [
   "./vendor/wasm/vision_wasm_nosimd_internal.js", "./vendor/wasm/vision_wasm_nosimd_internal.wasm",
   "./models/face_landmarker.task",
   ...["piano","violin","cello","guitar","wind","voice","drum"].map(k => `./img/inst/${k}.webp`),
-  "./img/sample/p1.webp", "./img/sample/p2.webp",
+  "./img/sample/p1.webp", "./img/sample/p2.webp", "./img/logo.svg", "./favicon.svg",
 ];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
