@@ -1,5 +1,5 @@
 // 핸즈프리 악보 — 오프라인 저장용 (버전을 올리면 새 파일로 교체됩니다)
-const VERSION = "smart-score-v7";
+const VERSION = "smart-score-v8";
 const FILES = [
   "./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png",
   "./vendor/pdf.min.mjs", "./vendor/pdf.worker.min.mjs", "./vendor/vision_bundle.mjs",

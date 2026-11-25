@@ -563,18 +563,18 @@ const GESTURES = {
 const g = (on, th) => ({on, th, inv:false});
 /* 악기별 기본값: 손이 자유로운지, 입이 막히는지, 몸이 얼마나 움직이는지에 따라 다르게 */
 const PRESETS = {
-  piano:  {name:"피아노", en:"Piano", note:"두 손이 건반 위에 있으니 <b>고개 돌리기</b>가 기본, <b>입 옆으로</b>는 보조입니다. 쉼표에서 한 손을 들어 <b>휙 쓸어도</b> 넘어갑니다.",
+  piano:  {name:"건반", en:"Keys", note:"두 손이 건반 위에 있으니 <b>고개 돌리기</b>가 기본, <b>입 옆으로</b>는 보조입니다. 쉼표에서 한 손을 들어 <b>휙 쓸어도</b> 넘어갑니다.",
            g:{head:g(true,.12), mouth:g(true,.5), wink:g(false,.6), hand:g(true,.24)}, hold:250, cool:1200},
+  voice:  {name:"보컬", en:"Vocal", note:"손이 자유로우니 <b>손 넘기기</b>가 기본입니다. 노래하며 고개를 많이 움직이므로 고개 기준은 높였고, 입 동작은 끕니다.",
+           g:{head:g(true,.22), mouth:g(false,.5), wink:g(false,.6), hand:g(true,.24)}, hold:400, cool:1500},
+  guitar: {name:"통기타, 일렉기타", en:"Guitar", note:"지판을 보느라 고개를 자주 숙이니 기준을 조금 높였습니다. <b>고개 돌리기</b> + <b>입 옆으로</b>.",
+           g:{head:g(true,.15), mouth:g(true,.5), wink:g(false,.6), hand:g(false,.24)}, hold:300, cool:1300},
   violin: {name:"바이올린, 비올라", en:"Violin, Viola", note:"턱받침 때문에 고개가 늘 기울어 있어요. 악기를 든 자세로 <b>기준 잡기</b>를 꼭 하세요. 고개 기준을 높이고 <b>입 옆으로</b>를 같이 씁니다. 활 동작 때문에 손 넘기기는 꺼 둡니다.",
            g:{head:g(true,.17), mouth:g(true,.5), wink:g(false,.6), hand:g(false,.24)}, hold:350, cool:1500},
   cello:  {name:"첼로, 베이스", en:"Cello, Bass", note:"앉아서 악기를 안고 연주해 고개가 비교적 자유롭습니다. <b>고개 돌리기</b> + <b>입 옆으로</b>.",
            g:{head:g(true,.15), mouth:g(true,.5), wink:g(false,.6), hand:g(false,.24)}, hold:300, cool:1300},
-  guitar: {name:"기타, 우쿨렐레", en:"Guitar", note:"지판을 보느라 고개를 자주 숙이니 기준을 조금 높였습니다. <b>고개 돌리기</b> + <b>입 옆으로</b>.",
-           g:{head:g(true,.15), mouth:g(true,.5), wink:g(false,.6), hand:g(false,.24)}, hold:300, cool:1300},
   wind:   {name:"관악기", en:"Winds", note:"입이 악기에 닿아 있어 <b>입 동작은 꺼 둡니다</b>. <b>윙크</b>와 <b>고개 돌리기</b>를 씁니다. 악기가 얼굴 아래쪽을 가리면 인식이 약해질 수 있어요.",
            g:{head:g(true,.18), mouth:g(false,.5), wink:g(true,.55), hand:g(false,.24)}, hold:300, cool:1500},
-  voice:  {name:"노래", en:"Voice", note:"손이 자유로우니 <b>손 넘기기</b>가 기본입니다. 노래하며 고개를 많이 움직이므로 고개 기준은 높였고, 입 동작은 끕니다.",
-           g:{head:g(true,.22), mouth:g(false,.5), wink:g(false,.6), hand:g(true,.24)}, hold:400, cool:1500},
   drum:   {name:"드럼, 타악기", en:"Percussion", note:"몸 움직임이 커서 오작동을 막도록 <b>더 오래 유지</b>해야 넘어갑니다. 고개 기준도 높였습니다.",
            g:{head:g(true,.2), mouth:g(true,.6), wink:g(false,.6), hand:g(false,.24)}, hold:500, cool:2000},
 };
